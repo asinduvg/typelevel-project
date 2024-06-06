@@ -12,16 +12,12 @@ import pureconfig.ConfigSource
 import com.rockthejvm.jobsboard.config.EmberConfig
 import com.rockthejvm.jobsboard.config.syntax.*
 import com.rockthejvm.jobsboard.http.HttpApi
-
-/*
-    1. Add a plain healthpoint to the application
-    2. Add minimal configuration
-    3. Basic http server layout
- */
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
 
 object Application extends IOApp.Simple {
 
-  val configSource = ConfigSource.default.load[EmberConfig]
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   override def run = ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
     EmberServerBuilder
