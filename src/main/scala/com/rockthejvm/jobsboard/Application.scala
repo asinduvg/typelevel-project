@@ -8,10 +8,10 @@ import org.http4s.server.Router
 import cats.effect.*
 import org.http4s.ember.server.EmberServerBuilder
 import com.comcast.ip4s.port
-import com.rockthejvm.jobsboard.http.HealthRoutes
 import pureconfig.ConfigSource
 import com.rockthejvm.jobsboard.config.EmberConfig
 import com.rockthejvm.jobsboard.config.syntax.*
+import com.rockthejvm.jobsboard.http.HttpApi
 
 /*
     1. Add a plain healthpoint to the application
@@ -28,7 +28,7 @@ object Application extends IOApp.Simple {
       .default[IO]
       .withHost(config.host) // String, need Host
       .withPort(config.port)
-      .withHttpApp(HealthRoutes[IO].routes.orNotFound)
+      .withHttpApp(HttpApi[IO].endpoints.orNotFound)
       .build
       .use(_ => IO.println("Server ready!") *> IO.never)
   }
