@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.http
+package com.rockthejvm.jobsboard.http.routes
 
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
@@ -17,69 +17,65 @@ import java.util.UUID
 import com.rockthejvm.jobsboard.domain.Job.*
 import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import org.typelevel.log4cats.Logger
+import com.rockthejvm.jobsboard.core.*
+import com.rockthejvm.jobsboard.logging.syntax.*
+import com.rockthejvm.jobsboard.playground.JobsPlayground.jobInfo
 
-class JobRoutes[F[_]: Concurrent: Logger] extends Http4sDsl[F] {
-
-  // "database"
-  private val database = mutable.Map.empty[UUID, Job]
+class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4sDsl[F] {
 
   // POST /jobs?offset=x&limit=y { filters } // TODO: add query params and filters
   private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] { case POST -> Root =>
-    Ok(database.values)
+    for {
+      jobs <- jobs.all()
+      resp <- Ok(jobs)
+    } yield resp
   }
 
   // GET /jobs/uuid
   private val findJobRoute: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / UUIDVar(uuid) =>
-    database.get(uuid) match
-      case Some(job) => Ok(job)
-      case None      => NotFound(FailureResponse(s"Job with UUID $uuid not found"))
+    for {
+      job <- jobs.find(uuid)
+      resp <- job match
+        case Some(job) => Ok(job)
+        case None      => NotFound(FailureResponse(s"Job with UUID $uuid not found"))
+    } yield resp
   }
 
   // POST /jobs/create { jobsInfo }
-  private def createJob(jobInfo: JobInfo): F[Job] =
-    Job(
-      id = UUID.randomUUID(),
-      date = System.currentTimeMillis(),
-      ownerEmail = "todo@rockthejvm.com",
-      jobInfo = jobInfo,
-      active = true
-    ).pure[F]
-
-  import com.rockthejvm.jobsboard.logging.syntax.*
   private val createJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ POST -> Root / "create" =>
       for {
-        _       <- Logger[F].info("Trying to add job") 
         jobInfo <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-        _       <- Logger[F].info(s"Parsed job info: $jobInfo")
-        job     <- createJob(jobInfo)
-        _       <- Logger[F].info(s"Created job info: $job")
-        _       <- database.put(job.id, job).pure[F]
-        resp    <- Created(job.id)
+        id      <- jobs.create("todo@rockthejvm.com", jobInfo)
+        resp    <- Created(id)
       } yield resp
   }
 
   // PUT /jobs/uuid { jobInfo }
   private val updateJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ PUT -> Root / UUIDVar(uuid) =>
-      database.get(uuid) match
-        case None => NotFound(FailureResponse(s"Cannot update job $uuid: not found"))
-        case Some(job) =>
-          for {
-            jobInfo <- req.as[JobInfo]
-            _       <- database.put(uuid, job.copy(jobInfo = jobInfo)).pure[F]
-            resp    <- Ok()
-          } yield resp
+      for {
+        jobInfo     <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
+        maybeNewJob <- jobs.update(uuid, jobInfo)
+        resp <- maybeNewJob match
+          case None    => NotFound(FailureResponse(s"Cannot update job $uuid: not found"))
+          case Some(_) => Ok()
+      } yield resp
   }
 
   // DELETE /jobs/uuid
   private val deleteJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
     case DELETE -> Root / UUIDVar(uuid) =>
-      database.get(uuid) match
-        case None => NotFound(FailureResponse("Cannot delete job $uuid: not found"))
-        case Some(job) =>
-          database.remove(uuid)
-          Ok()
+      for {
+        maybeJob <- jobs.find(uuid)
+        resp <- maybeJob match
+          case None => NotFound(FailureResponse(s"Cannot delete job $uuid: not found"))
+          case Some(_) =>
+            for {
+              _    <- jobs.delete(uuid)
+              resp <- Ok()
+            } yield resp
+      } yield resp
   }
 
   val routes = Router(
@@ -88,5 +84,5 @@ class JobRoutes[F[_]: Concurrent: Logger] extends Http4sDsl[F] {
 }
 
 object JobRoutes {
-  def apply[F[_]: Concurrent: Logger]: JobRoutes[F] = new JobRoutes[F]
+  def apply[F[_]: Concurrent: Logger](jobs: Jobs[F]): JobRoutes[F] = new JobRoutes[F](jobs)
 }

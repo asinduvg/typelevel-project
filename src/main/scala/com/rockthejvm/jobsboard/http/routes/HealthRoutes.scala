@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard.http
+package com.rockthejvm.jobsboard.http.routes
 
 import org.http4s.HttpRoutes
 import cats.Monad

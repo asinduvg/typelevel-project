@@ -9,23 +9,31 @@ import cats.effect.*
 import org.http4s.ember.server.EmberServerBuilder
 import com.comcast.ip4s.port
 import pureconfig.ConfigSource
-import com.rockthejvm.jobsboard.config.EmberConfig
+import com.rockthejvm.jobsboard.config.AppConfig
 import com.rockthejvm.jobsboard.config.syntax.*
-import com.rockthejvm.jobsboard.http.HttpApi
+import com.rockthejvm.jobsboard.modules.*
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import cats.syntax.*
 
 object Application extends IOApp.Simple {
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  override def run = ConfigSource.default.loadF[IO, EmberConfig].flatMap { config =>
-    EmberServerBuilder
-      .default[IO]
-      .withHost(config.host) // String, need Host
-      .withPort(config.port)
-      .withHttpApp(HttpApi[IO].endpoints.orNotFound)
-      .build
-      .use(_ => IO.println("Server ready!") *> IO.never)
+  override def run = ConfigSource.default.loadF[IO, AppConfig].flatMap {
+    case AppConfig(postgresConfig, emberConfig) =>
+      val appResource = for {
+        xa <- Database.makePostgresResource[IO](postgresConfig)
+        core    <- Core[IO](xa)
+        httpApi <- HttpApi[IO](core)
+        server <- EmberServerBuilder
+          .default[IO]
+          .withHost(emberConfig.host) // String, need Host
+          .withPort(emberConfig.port)
+          .withHttpApp(httpApi.endpoints.orNotFound)
+          .build
+      } yield server
+
+      appResource.use(_ => IO.println("Server ready!") *> IO.never)
   }
 }
