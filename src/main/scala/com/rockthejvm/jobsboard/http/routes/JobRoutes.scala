@@ -3,7 +3,6 @@ package com.rockthejvm.jobsboard.http.routes
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
 
-import org.http4s.HttpRoutes
 import cats.*
 import cats.effect.*
 import org.http4s.dsl.Http4sDsl
@@ -11,7 +10,6 @@ import org.http4s.server.Router
 import org.http4s.Http
 import java.net.http.HttpRequest
 import cats.syntax.all.*
-import scala.collection.mutable
 
 import java.util.UUID
 import com.rockthejvm.jobsboard.domain.Job.*
@@ -19,7 +17,7 @@ import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.logging.syntax.*
-import com.rockthejvm.jobsboard.playground.JobsPlayground.jobInfo
+import org.http4s.HttpRoutes
 
 class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4sDsl[F] {
 

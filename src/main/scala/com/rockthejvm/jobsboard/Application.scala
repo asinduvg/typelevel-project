@@ -23,10 +23,10 @@ object Application extends IOApp.Simple {
   override def run = ConfigSource.default.loadF[IO, AppConfig].flatMap {
     case AppConfig(postgresConfig, emberConfig) =>
       val appResource = for {
-        xa <- Database.makePostgresResource[IO](postgresConfig)
-        core    <- Core[IO](xa)
-        httpApi <- HttpApi[IO](core)
-        server <- EmberServerBuilder
+        xa      <- Database.makePostgresResource[IO](postgresConfig) // DB connection
+        core    <- Core[IO](xa) // DB layer
+        httpApi <- HttpApi[IO](core) // Business Logic layer
+        server <- EmberServerBuilder // Server layer
           .default[IO]
           .withHost(emberConfig.host) // String, need Host
           .withPort(emberConfig.port)
