@@ -19,7 +19,9 @@ import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.logging.syntax.*
 import org.http4s.HttpRoutes
 
-class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4sDsl[F] {
+import com.rockthejvm.jobsboard.http.validation.syntax.*
+
+class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
   // POST /jobs?offset=x&limit=y { filters } // TODO: add query params and filters
   private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] { case POST -> Root =>
@@ -42,23 +44,26 @@ class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends Http4s
   // POST /jobs/create { jobsInfo }
   private val createJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ POST -> Root / "create" =>
-      for {
-        jobInfo <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-        id      <- jobs.create("todo@rockthejvm.com", jobInfo)
-        resp    <- Created(id)
-      } yield resp
+      req.validate[JobInfo] { jobInfo =>
+        for {
+          id   <- jobs.create("todo@rockthejvm.com", jobInfo)
+          resp <- Created(id)
+        } yield resp
+      }
   }
 
   // PUT /jobs/uuid { jobInfo }
   private val updateJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
     case req @ PUT -> Root / UUIDVar(uuid) =>
-      for {
-        jobInfo     <- req.as[JobInfo].logError(e => s"Parsing payload failed: $e")
-        maybeNewJob <- jobs.update(uuid, jobInfo)
-        resp <- maybeNewJob match
-          case None    => NotFound(FailureResponse(s"Cannot update job $uuid: not found"))
-          case Some(_) => Ok()
-      } yield resp
+      req.validate[JobInfo] { jobInfo =>
+        for {
+          maybeNewJob <- jobs.update(uuid, jobInfo)
+          resp <- maybeNewJob match
+            case None    => NotFound(FailureResponse(s"Cannot update job $uuid: not found"))
+            case Some(_) => Ok()
+        } yield resp
+      }
+
   }
 
   // DELETE /jobs/uuid
