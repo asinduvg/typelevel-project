@@ -12,12 +12,13 @@ import org.http4s.implicits.*
 import org.http4s.dsl.*
 import org.scalatest.matchers.should.Matchers
 
-import com.rockthejvm.jobsboard.domain.Job.*
+import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.core.Jobs
 import com.rockthejvm.jobsboard.fixtures.JobFixture
 import java.util.UUID
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.rockthejvm.jobsboard.domain.pagination.*
 
 class JobRoutesSpec
     extends AsyncFreeSpec
@@ -37,11 +38,13 @@ class JobRoutesSpec
 
     override def find(id: UUID): IO[Option[Job]] =
       if (id == AwesomeJobUuid)
-        println("hiiiii")
         IO.pure(Some(AwesomeJob))
       else
-        println("hiiiii2")
         IO.pure(None)
+
+    def all(filter: JobFilter, pagination: Pagination): IO[List[Job]] =
+      if (filter.remote) IO.pure(List())
+      else IO.pure(List(AwesomeJob))
 
     override def update(id: UUID, jobInfo: JobInfo): IO[Option[Job]] =
       if (id == AwesomeJobUuid)
@@ -85,6 +88,7 @@ class JobRoutesSpec
         // simulate an HTTP request
         response <- jobRoutes.orNotFound.run(
           Request(method = Method.POST, uri = uri"/jobs/")
+            .withEntity(JobFilter()) // empty filter
         )
         retrieved <- response.as[List[Job]]
         // get the HTTP response
@@ -92,6 +96,23 @@ class JobRoutesSpec
       } yield {
         response.status shouldBe Status.Ok
         retrieved shouldBe List(AwesomeJob)
+      }
+    }
+
+    "should return all jobs that satisfy a filter" in {
+      // code under test
+      for {
+        // simulate an HTTP request
+        response <- jobRoutes.orNotFound.run(
+          Request(method = Method.POST, uri = uri"/jobs/")
+            .withEntity(JobFilter(remote = true)) // empty filter
+        )
+        retrieved <- response.as[List[Job]]
+        // get the HTTP response
+        // make some assertions
+      } yield {
+        response.status shouldBe Status.Ok
+        retrieved shouldBe List()
       }
     }
 
