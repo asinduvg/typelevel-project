@@ -5,11 +5,15 @@ import doobie.*
 import doobie.implicits.*
 import doobie.util.*
 import doobie.hikari.HikariTransactor
-import com.rockthejvm.jobsboard.domain.Job.JobInfo
+import org.typelevel.log4cats.Logger
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.core.LiveJobs
 import scala.io.StdIn
 
 object JobsPlayground extends IOApp.Simple {
+
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   val postgresResource: Resource[IO, HikariTransactor[IO]] = for {
     ec <- ExecutionContexts.fixedThreadPool(32)

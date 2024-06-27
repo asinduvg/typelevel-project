@@ -12,7 +12,7 @@ import java.net.http.HttpRequest
 import cats.syntax.all.*
 
 import java.util.UUID
-import com.rockthejvm.jobsboard.domain.Job.*
+import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.core.*
@@ -20,15 +20,21 @@ import com.rockthejvm.jobsboard.logging.syntax.*
 import org.http4s.HttpRoutes
 
 import com.rockthejvm.jobsboard.http.validation.syntax.*
+import com.rockthejvm.jobsboard.domain.pagination.*
 
 class JobRoutes[F[_]: Concurrent: Logger] private (jobs: Jobs[F]) extends HttpValidationDsl[F] {
 
-  // POST /jobs?offset=x&limit=y { filters } // TODO: add query params and filters
-  private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] { case POST -> Root =>
-    for {
-      jobs <- jobs.all()
-      resp <- Ok(jobs)
-    } yield resp
+  object OffsetQueryParam   extends OptionalQueryParamDecoderMatcher[Int]("offset")
+  object LimitsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
+
+  // POST /jobs?limit=x&offset=y { filters } // TODO: add query params and filters
+  private val allJobsRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root :? LimitsetQueryParam(limit) +& OffsetQueryParam(offset) =>
+      for {
+        filter <- req.as[JobFilter]
+        jobs   <- jobs.all(filter, Pagination(limit, offset))
+        resp   <- Ok(jobs)
+      } yield resp
   }
 
   // GET /jobs/uuid

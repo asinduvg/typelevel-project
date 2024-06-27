@@ -4,7 +4,7 @@ import cats.*
 import cats.implicits.*
 import cats.data.* 
 import cats.data.Validated.* 
-import com.rockthejvm.jobsboard.domain.Job.JobInfo
+import com.rockthejvm.jobsboard.domain.job.JobInfo
 import scala.util.{Try, Success, Failure}
 import java.net.URL
 
@@ -20,18 +20,6 @@ object validators {
   trait Validator[A] {
     def validate(value: A): ValidationResult[A]
   }
-
-  def validateRequired[A]
-  (field: A, fieldName: String)
-  (required: A => Boolean): ValidationResult[A] =
-    if (required(field)) field.validNel
-    else EmptyField(fieldName).invalidNel
-
-  def validateUrl(field: String, fieldName: String): ValidationResult[String] =
-    Try(URL(field).toURI()) match { // throws some exceptions
-      case Success(_) => field.validNel
-      case Failure(exception) => InvalidUrl(fieldName).invalidNel
-    } 
 
   given jobInfoValidator: Validator[JobInfo] = (jobInfo: JobInfo) => {
     val JobInfo(
@@ -73,6 +61,17 @@ object validators {
       seniority.validNel,
       other.validNel
     ).mapN(JobInfo.apply) // ValidatedNel[ValidationFailure, JobInfo]
-
   }
+
+  private def validateRequired[A]
+  (field: A, fieldName: String)
+  (required: A => Boolean): ValidationResult[A] =
+    if (required(field)) field.validNel
+    else EmptyField(fieldName).invalidNel
+
+  private def validateUrl(field: String, fieldName: String): ValidationResult[String] =
+    Try(URL(field).toURI()) match { // throws some exceptions
+      case Success(_) => field.validNel
+      case Failure(exception) => InvalidUrl(fieldName).invalidNel
+    } 
 }

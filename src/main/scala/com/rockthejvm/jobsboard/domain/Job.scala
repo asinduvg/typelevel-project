@@ -2,7 +2,7 @@ package com.rockthejvm.jobsboard.domain
 
 import java.util.UUID
 
-object Job {
+object job {
   case class Job(
       id: UUID,
       date: Long,
@@ -54,5 +54,15 @@ object Job {
         None
       )
   }
+
+  final case class JobFilter(
+      companies: List[String] = List(),
+      locations: List[String] = List(),
+      countries: List[String] = List(),
+      seniorities: List[String] = List(),
+      tags: List[String] = List(),
+      maxSalary: Option[Int] = None,
+      remote: Boolean = false
+  )
 
 }

@@ -20,7 +20,7 @@ import com.rockthejvm.jobsboard.http.responses.*
 
 object syntax {
 
-  def validateEntity[A](entity: A)(using validator: Validator[A]): ValidationResult[A] =
+  private def validateEntity[A](entity: A)(using validator: Validator[A]): ValidationResult[A] =
     validator.validate(entity)
 
   trait HttpValidationDsl[F[_]: MonadThrow: Logger] extends Http4sDsl[F] {
