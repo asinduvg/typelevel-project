@@ -1,6 +1,6 @@
 CREATE DATABASE board;
 
-\c board;
+\ c board;
 
 CREATE TABLE jobs(
     id uuid DEFAULT gen_random_uuid(),
@@ -23,5 +23,21 @@ CREATE TABLE jobs(
     active boolean NOT NULL DEFAULT false
 );
 
-ALTER TABLE jobs
-ADD CONSTRAINT jobs_pk PRIMARY KEY (id);
+ALTER TABLE
+    jobs
+ADD
+    CONSTRAINT jobs_pk PRIMARY KEY (id);
+
+CREATE TABLE users (
+    email text NOT NULL,
+    hashedPassword text NOT NULL,
+    firstName text,
+    lastName text,
+    company text NOT NULL,
+    role text NOT NULL
+);
+
+ALTER TABLE
+    users
+ADD
+    CONSTRAINT pk_users PRIMARY KEY (email);
