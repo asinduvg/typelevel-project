@@ -1,20 +1,19 @@
 package com.rockthejvm.jobsboard.core
 
-import org.scalatest.freespec.AsyncFreeSpec
-import cats.effect.testing.scalatest.AsyncIOSpec
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.Args
-import org.scalatest.Status
-import com.rockthejvm.jobsboard.fixtures.UsersFixture
-
 import cats.effect.*
+import cats.effect.testing.scalatest.AsyncIOSpec
+
+import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{Args, Status, Inside}
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.postgresql.util.PSQLException
 
 import doobie.implicits.*
+
+import com.rockthejvm.jobsboard.fixtures.UserFixture
 import com.rockthejvm.jobsboard.domain.user.*
-import org.scalatest.Inside
-import org.postgresql.util.PSQLException
 
 class UsersSpec
     extends AsyncFreeSpec
@@ -22,7 +21,7 @@ class UsersSpec
     with Matchers
     with Inside
     with DoobieSpec
-    with UsersFixture {
+    with UserFixture {
 
   override val initScript: String = "sql/users.sql"
 

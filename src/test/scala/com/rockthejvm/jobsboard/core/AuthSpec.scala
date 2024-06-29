@@ -1,26 +1,29 @@
 package com.rockthejvm.jobsboard.core
 
-import org.scalatest.freespec.AsyncFreeSpec
+import cats.effect.*
 import cats.effect.testing.scalatest.AsyncIOSpec
+import cats.data.OptionT
+
+import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
-import com.rockthejvm.jobsboard.fixtures.UsersFixture
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.Logger
-import cats.effect.*
-import com.rockthejvm.jobsboard.domain.user.User
-import com.rockthejvm.jobsboard.domain.security.Authenticator
+
 import tsec.mac.jca.HMACSHA256
 import tsec.authentication.IdentityStore
-import cats.data.OptionT
 import tsec.authentication.JWTAuthenticator
+
 import concurrent.duration.DurationInt
+
 import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
+import com.rockthejvm.jobsboard.domain.security.Authenticator
+import com.rockthejvm.jobsboard.fixtures.UserFixture
+
 import tsec.passwordhashers.PasswordHash
 import tsec.passwordhashers.jca.BCrypt
-import tsec.passwordhashers.PasswordHash
 
-class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UsersFixture {
+class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFixture {
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 

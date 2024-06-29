@@ -1,23 +1,25 @@
 package com.rockthejvm.jobsboard.http.routes
 
-import io.circe.generic.auto.*
-import org.http4s.circe.CirceEntityCodec.*
-
-import cats.effect.*
 import cats.implicits.*
-import org.scalatest.freespec.AsyncFreeSpec
+import cats.effect.*
 import cats.effect.testing.scalatest.AsyncIOSpec
-import org.http4s.*
-import org.http4s.implicits.*
-import org.http4s.dsl.*
-import org.scalatest.matchers.should.Matchers
 
-import com.rockthejvm.jobsboard.domain.job.*
-import com.rockthejvm.jobsboard.core.Jobs
-import com.rockthejvm.jobsboard.fixtures.JobFixture
-import java.util.UUID
+import io.circe.generic.auto.*
+
+import org.http4s.*
+import org.http4s.dsl.*
+import org.http4s.implicits.*
+import org.http4s.circe.CirceEntityCodec.*
+import org.scalatest.freespec.AsyncFreeSpec
+import org.scalatest.matchers.should.Matchers
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+
+import java.util.UUID
+
+import com.rockthejvm.jobsboard.core.Jobs
+import com.rockthejvm.jobsboard.fixtures.JobFixture
+import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.domain.pagination.*
 
 class JobRoutesSpec
