@@ -9,6 +9,8 @@ import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
 import tsec.authentication.JWTAuthenticator
 import tsec.mac.jca.HMACSHA256
+import tsec.passwordhashers.jca.BCrypt
+import tsec.passwordhashers.PasswordHash
 
 trait Auth[F[_]] {
   def login(email: String, password: String): F[Option[JwtToken]]
@@ -17,26 +19,92 @@ trait Auth[F[_]] {
       email: String,
       newPasswordInfo: NewPasswordInfo
   ): F[Either[String, Option[User]]]
+  // TODO: password recovery via email
 }
 
-class LiveAuth[F[_]: MonadCancelThrow: Logger] private (
+class LiveAuth[F[_]: Async: Logger] private (
     users: Users[F],
     authenticator: Authenticator[F]
 ) extends Auth[F] {
 
-  override def login(email: String, password: String): F[Option[JwtToken]] = ???
+  override def login(email: String, password: String): F[Option[JwtToken]] =
+    for {
+      // find the user in the DB -> return None if no user
+      maybeUser <- users.find(email)
+      // check password
+      maybeValidatedUser <- maybeUser.filterA(user =>
+        BCrypt
+          .checkpwBool[F](
+            password,
+            PasswordHash[BCrypt](user.hashedPassword)
+          )
+      )
 
-  override def signup(newUserInfo: NewUserInfo): F[Option[User]] = ???
+      // return a new token if password matches
+      maybeJwtToken <- maybeValidatedUser.traverse(user => authenticator.create(user.email))
+    } yield maybeJwtToken
+
+  override def signup(newUserInfo: NewUserInfo): F[Option[User]] =
+    // find the user in the db, if we did => None
+    users.find(newUserInfo.email).flatMap {
+      case Some(_) => None.pure[F]
+      case None =>
+        for {
+          // hash the password
+          hashedPw <- BCrypt.hashpw[F](newUserInfo.password)
+          user <- User(
+            newUserInfo.email,
+            hashedPw,
+            newUserInfo.firstName,
+            newUserInfo.lastName,
+            newUserInfo.company,
+            Role.RECRUITER
+          ).pure[F]
+          // create a new user in the db
+          _ <- users.create(user)
+        } yield Some(user)
+    }
 
   override def changePassword(
       email: String,
       newPasswordInfo: NewPasswordInfo
-  ): F[Either[String, Option[User]]] = ???
+  ): F[Either[String, Option[User]]] =
+    def updateUser(user: User, newPassword: String): F[Option[User]] =
+      for {
+        // if password ok, hash new password
+        newHashedPw <- BCrypt.hashpw[F](newPassword)
+        // update
+        updatedUser <- users.update(user.copy(hashedPassword = newHashedPw))
+      } yield updatedUser
 
+    def checkAndUpdate(
+        user: User,
+        oldPassword: String,
+        newPassword: String
+    ): F[Either[String, Option[User]]] =
+      for {
+        // if user, check password
+        validPassword <- BCrypt
+          .checkpwBool[F](
+            oldPassword,
+            PasswordHash[BCrypt](user.hashedPassword)
+          )
+        result <-
+          if (validPassword) updateUser(user, newPassword).map(Right(_))
+          else Left("Invalid password").pure[F]
+      } yield result
+
+    // find user
+    users.find(email).flatMap {
+      case None => Right(None).pure[F]
+      case Some(user) =>
+        val NewPasswordInfo(oldPassword, newPassword) = newPasswordInfo
+        checkAndUpdate(user, oldPassword, newPassword)
+    }
 }
 
 object LiveAuth {
-  def apply[F[_]: MonadCancelThrow: Logger](
+  def apply[F[_]: Async: Logger](
       users: Users[F],
       authenticator: Authenticator[F]
   ): F[LiveAuth[F]] =

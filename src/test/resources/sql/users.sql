@@ -24,7 +24,7 @@ INSERT INTO
 VALUES
     (
         'daniel@rockthejvm.com',
-        'rockthejvm',
+        '$2a$10$nVEJ3pJkjN1K6esp6aS6s.0mp2gGMep1x7Akaz3UgzTCrxGnAwC0a',
         'Daniel',
         'Ciocirlan',
         'Rock the JVM',
@@ -43,7 +43,7 @@ INSERT INTO
 VALUES
     (
         'riccardo@rockthejvm.com',
-        'riccardorulez',
+        '$2a$10$VgVDCMWMsS2F1FXn/dfZ.uBgRyVOao833QyQXy0Sn8/T9NqnRC7Mu',
         'Riccardo',
         'Cardin',
         'Rock the JVM',
