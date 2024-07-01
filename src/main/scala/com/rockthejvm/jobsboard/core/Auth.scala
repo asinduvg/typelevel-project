@@ -2,15 +2,20 @@ package com.rockthejvm.jobsboard.core
 
 import cats.effect.*
 import cats.implicits.*
+import cats.data.OptionT
 import org.typelevel.log4cats.Logger
 
 import com.rockthejvm.jobsboard.domain.security.*
 import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
-import tsec.authentication.JWTAuthenticator
+import com.rockthejvm.jobsboard.config.{SecurityConfig}
+import tsec.authentication.{JWTAuthenticator, IdentityStore, BackingStore}
 import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt
 import tsec.passwordhashers.PasswordHash
+import tsec.common.SecureRandomId
+
+import concurrent.duration.DurationInt
 
 trait Auth[F[_]] {
   def login(email: String, password: String): F[Option[JwtToken]]
@@ -110,8 +115,44 @@ class LiveAuth[F[_]: Async: Logger] private (
 
 object LiveAuth {
   def apply[F[_]: Async: Logger](
-      users: Users[F],
-      authenticator: Authenticator[F]
-  ): F[LiveAuth[F]] =
-    new LiveAuth[F](users, authenticator).pure[F]
+      users: Users[F]
+  )(securityConfig: SecurityConfig): F[LiveAuth[F]] = {
+
+    // 1. identity store: String => OptionT[F, User]
+    val idStore: IdentityStore[F, String, User] = (email: String) => OptionT(users.find(email))
+
+    // 2. backing store for JWT tokens: BackingStore[F, id, JwtToken]
+    val tokenStoreF = Ref.of[F, Map[SecureRandomId, JwtToken]](Map.empty).map { ref =>
+      new BackingStore[F, SecureRandomId, JwtToken] {
+        override def get(id: SecureRandomId): OptionT[F, JwtToken] =
+          OptionT(ref.get.map(_.get(id)))
+
+        override def put(elem: JwtToken): F[JwtToken] =
+          ref.modify(store => (store + (elem.id -> elem), elem))
+
+        override def update(v: JwtToken): F[JwtToken] =
+          put(v)
+
+        override def delete(id: SecureRandomId): F[Unit] =
+          ref.modify(store => (store - id, ()))
+      }
+    }
+
+    // 3. hashing key
+    val keyF =
+      HMACSHA256.buildKey[F](securityConfig.secret.getBytes("UTF-8")) // TODO: move to config
+
+    // 4. authenticator
+    for {
+      key        <- keyF
+      tokenStore <- tokenStoreF
+      authenticator = JWTAuthenticator.backed.inBearerToken(
+        expiryDuration = securityConfig.jwtExpiryDuration, // expiry of tokens
+        maxIdle = None,                                    // max idle (optional)
+        identityStore = idStore,                           // identity store
+        tokenStore = tokenStore,
+        signingKey = key // hash key
+      )
+    } yield new LiveAuth[F](users, authenticator) // 5. Live auth
+  }
 }
