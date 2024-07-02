@@ -13,7 +13,7 @@ class HttpApi[F[_]: Concurrent: Logger] private (core: Core[F]) {
   private val authRoutes   = AuthRoutes[F](core.auth).routes
 
   val endpoints = Router(
-    "/api" -> (healthRoutes <+> jobRoutes)
+    "/api" -> (healthRoutes <+> jobRoutes <+> authRoutes)
   )
 }
 

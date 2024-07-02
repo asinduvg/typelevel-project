@@ -1,6 +1,6 @@
 CREATE DATABASE board;
 
-\ c board;
+\c board;
 
 CREATE TABLE jobs(
     id uuid DEFAULT gen_random_uuid(),
@@ -33,7 +33,7 @@ CREATE TABLE users (
     hashedPassword text NOT NULL,
     firstName text,
     lastName text,
-    company text NOT NULL,
+    company text,
     role text NOT NULL
 );
 
