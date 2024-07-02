@@ -27,33 +27,19 @@ import com.rockthejvm.jobsboard.core.Auth
 import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
 import com.rockthejvm.jobsboard.domain.security.{JwtToken, Authenticator}
 import com.rockthejvm.jobsboard.domain.user.{User, NewUserInfo}
-import com.rockthejvm.jobsboard.fixtures.UserFixture
+import com.rockthejvm.jobsboard.fixtures.{UserFixture, SecuredRouteFixture}
 import com.rockthejvm.jobsboard.domain.auth.LoginInfo
+
 
 class AuthRoutesSpec
     extends AsyncFreeSpec
     with AsyncIOSpec
     with Matchers
     with Http4sDsl[IO]
-    with UserFixture {
+    with UserFixture
+    with SecuredRouteFixture {
 
 //////////////// prep ////////////////
-  val mockedAuthenticator: Authenticator[IO] = {
-    // key for hashing
-    val key = HMACSHA256.unsafeGenerateKey
-    // identity store to retrieved users
-    val idStore: IdentityStore[IO, String, User] = (email: String) =>
-      if (email == danielEmail) OptionT.pure(Daniel)
-      else if (email == riccardoEmail) OptionT.pure(Riccardo)
-      else OptionT.none[IO, User]
-    // jwt authenticator
-    JWTAuthenticator.unbacked.inBearerToken(
-      1.day,   // expiry of tokens
-      None,    // max idle (optional)
-      idStore, // identity store
-      key      // hash key
-    )
-  }
 
   val auth: Auth[IO] = new Auth[IO] {
 
@@ -87,14 +73,6 @@ class AuthRoutesSpec
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](auth).routes
-
-  extension (r: Request[IO])
-    def withBearerToken(a: JwtToken): Request[IO] =
-      r.putHeaders {
-        val jwtString = JWTMac.toEncodedString[IO, HMACSHA256](a.jwt)
-        // Authorization: Bearer {jwt}
-        Authorization(Credentials.Token(AuthScheme.Bearer, jwtString))
-      }
 
   ////////////// tests ////////////
   "AuthRoutes" - {
