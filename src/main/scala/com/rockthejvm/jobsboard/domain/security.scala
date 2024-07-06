@@ -1,7 +1,13 @@
 package com.rockthejvm.jobsboard.domain
 
 import tsec.mac.jca.HMACSHA256
-import tsec.authentication.{AugmentedJWT, SecuredRequest, JWTAuthenticator, TSecAuthService, SecuredRequestHandler}
+import tsec.authentication.{
+  AugmentedJWT,
+  SecuredRequest,
+  JWTAuthenticator,
+  TSecAuthService,
+  SecuredRequestHandler
+}
 import tsec.authorization.{BasicRBAC, AuthorizationInfo}
 
 import cats.{Applicative, MonadThrow, Monad}
@@ -19,8 +25,11 @@ object security {
   type Authenticator[F[_]] = JWTAuthenticator[F, String, User, Crypto]
   type AuthRoute[F[_]]     = PartialFunction[SecuredRequest[F, User, JwtToken], F[Response[F]]]
   // type aliases for http routes
-  type AuthRBAC[F[_]]      = BasicRBAC[F, Role, User, JwtToken]
+  type AuthRBAC[F[_]]       = BasicRBAC[F, Role, User, JwtToken]
   type SecuredHandler[F[_]] = SecuredRequestHandler[F, String, User, JwtToken]
+  object SecuredHandler {
+    def apply[F[_]](using handler: SecuredHandler[F]): SecuredHandler[F] = handler
+  }
 
   // RBAC
   // BasicRBAC[F, Role, User, JwtToken]

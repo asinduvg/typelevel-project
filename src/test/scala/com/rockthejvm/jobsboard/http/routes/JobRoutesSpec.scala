@@ -21,6 +21,7 @@ import com.rockthejvm.jobsboard.core.Jobs
 import com.rockthejvm.jobsboard.fixtures.{JobFixture, SecuredRouteFixture}
 import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.domain.pagination.*
+import com.rockthejvm.jobsboard.domain.security.*
 
 class JobRoutesSpec
     extends AsyncFreeSpec
@@ -63,7 +64,7 @@ class JobRoutesSpec
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
   // this is what we are testing
-  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs, mockedAuthenticator).routes
+  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs).routes
 
   //////////////////////////////////////////////////////////////////////
   // tests

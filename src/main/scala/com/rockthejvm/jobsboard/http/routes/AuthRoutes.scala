@@ -22,18 +22,18 @@ import com.rockthejvm.jobsboard.domain.security.*
 
 import scala.language.implicitConversions
 
-class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpValidationDsl[F] {
-
-  private val authenticator = auth.authenticator
-  private val securedHandler: SecuredRequestHandler[F, String, User, JwtToken] =
-    SecuredRequestHandler(authenticator)
-
+class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
+    auth: Auth[F],
+    authenticator: Authenticator[F]
+) extends HttpValidationDsl[F] {
   // POST /auth/login { LoginInfo } => Ok with JWT as Authorization: Bearer {jwt}
   private val loginRoute: HttpRoutes[F] = HttpRoutes.of[F] { case req @ POST -> Root / "login" =>
     req.validate[LoginInfo] { loginInfo =>
       val maybeJwtToken = for {
-        maybeToken <- auth.login(loginInfo.email, loginInfo.password)
-        _          <- Logger[F].info(s"User login in: ${loginInfo.email}")
+        maybeUser <- auth.login(loginInfo.email, loginInfo.password)
+        _         <- Logger[F].info(s"User login in: ${loginInfo.email}")
+        // return a new token if password matches
+        maybeToken <- maybeUser.traverse(user => authenticator.create(user.email))
       } yield maybeToken
 
       maybeJwtToken.map {
@@ -90,7 +90,7 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
   }
 
   val unauthedRoutes = loginRoute <+> createUserRoute
-  val authedRoutes = securedHandler.liftService(
+  val authedRoutes = SecuredHandler[F].liftService(
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|
       deleteUserRoute.restrictedTo(adminOnly)
@@ -101,7 +101,14 @@ class AuthRoutes[F[_]: Concurrent: Logger] private (auth: Auth[F]) extends HttpV
   )
 }
 
+/*
+  - need a CAPABILITY, instead of intermediate values (use Dependency Injection in that case)
+  - instantiated ONCE in the entire application
+ */
 object AuthRoutes {
-  def apply[F[_]: Concurrent: Logger](auth: Auth[F]) =
-    new AuthRoutes[F](auth)
+  def apply[F[_]: Concurrent: Logger: SecuredHandler /* above comment is for SecuredHandler */ ](
+      auth: Auth[F],
+      authenticator: Authenticator[F]
+  ) =
+    new AuthRoutes[F](auth, authenticator)
 }

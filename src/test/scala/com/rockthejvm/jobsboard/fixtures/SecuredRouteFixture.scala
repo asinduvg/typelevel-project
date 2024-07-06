@@ -14,6 +14,7 @@ import org.http4s.Request
 import org.http4s.headers.Authorization
 import org.http4s.Credentials
 import org.http4s.AuthScheme
+import tsec.authentication.SecuredRequestHandler
 
 trait SecuredRouteFixture extends UserFixture {
   val mockedAuthenticator: Authenticator[IO] = {
@@ -40,4 +41,6 @@ trait SecuredRouteFixture extends UserFixture {
         // Authorization: Bearer {jwt}
         Authorization(Credentials.Token(AuthScheme.Bearer, jwtString))
       }
+
+  given securedHandler: SecuredHandler[IO] = SecuredRequestHandler(mockedAuthenticator)
 }

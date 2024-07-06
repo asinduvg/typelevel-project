@@ -24,8 +24,8 @@ object Application extends IOApp.Simple {
     case AppConfig(postgresConfig, emberConfig, securityConfig) =>
       val appResource = for {
         xa      <- Database.makePostgresResource[IO](postgresConfig) // DB connection
-        core    <- Core[IO](xa)(securityConfig) // DB layer
-        httpApi <- HttpApi[IO](core) // Business Logic layer
+        core    <- Core[IO](xa) // DB layer
+        httpApi <- HttpApi[IO](core, securityConfig) // Business Logic layer
         server <- EmberServerBuilder // Server layer
           .default[IO]
           .withHost(emberConfig.host) // String, need Host

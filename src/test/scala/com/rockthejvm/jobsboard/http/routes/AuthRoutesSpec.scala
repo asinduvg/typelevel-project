@@ -19,17 +19,17 @@ import org.typelevel.ci.CIStringSyntax
 
 import tsec.mac.jca.HMACSHA256
 import tsec.jws.mac.JWTMac
-import tsec.authentication.{IdentityStore, JWTAuthenticator}
+import tsec.authentication.{IdentityStore, JWTAuthenticator, SecuredRequestHandler}
 
 import scala.concurrent.duration.DurationInt
 
 import com.rockthejvm.jobsboard.core.Auth
 import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
-import com.rockthejvm.jobsboard.domain.security.{JwtToken, Authenticator}
+import com.rockthejvm.jobsboard.domain.security.*
 import com.rockthejvm.jobsboard.domain.user.{User, NewUserInfo}
 import com.rockthejvm.jobsboard.fixtures.{UserFixture, SecuredRouteFixture}
 import com.rockthejvm.jobsboard.domain.auth.LoginInfo
-
+import com.rockthejvm.jobsboard.domain.security.*
 
 class AuthRoutesSpec
     extends AsyncFreeSpec
@@ -43,9 +43,9 @@ class AuthRoutesSpec
 
   val auth: Auth[IO] = new Auth[IO] {
 
-    override def login(email: String, password: String): IO[Option[JwtToken]] =
+    override def login(email: String, password: String): IO[Option[User]] =
       if (email == danielEmail && password == danielPassword)
-        mockedAuthenticator.create(email).option
+        IO(Some(Daniel))
       else IO.pure(None)
 
     override def signup(newUserInfo: NewUserInfo): IO[Option[User]] =
@@ -66,13 +66,11 @@ class AuthRoutesSpec
         IO.pure(Right(None))
 
     override def delete(email: String): IO[Boolean] = IO.pure(true)
-
-    override def authenticator: Authenticator[IO] = mockedAuthenticator
   }
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](auth).routes
+  val authRoutes: HttpRoutes[IO] = AuthRoutes[IO](auth, mockedAuthenticator).routes
 
   ////////////// tests ////////////
   "AuthRoutes" - {
