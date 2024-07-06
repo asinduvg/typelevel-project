@@ -1,8 +1,26 @@
 package com.rockthejvm.jobsboard.fixtures
 
+import cats.effect.IO
+import com.rockthejvm.jobsboard.core.Users
 import com.rockthejvm.jobsboard.domain.user.*
 
 trait UserFixture {
+
+  val mockedUsers: Users[IO] = new Users[IO] {
+    override def find(email: String): IO[Option[User]] =
+      if (email == danielEmail) IO.pure(Some(Daniel))
+      else IO.pure(None)
+
+    override def create(user: User): IO[String] =
+      IO.pure(user.email)
+
+    override def update(user: User): IO[Option[User]] =
+      IO.pure(Some(user))
+
+    override def delete(email: String): IO[Boolean] =
+      IO.pure(true)
+  }
+
   val Daniel = User(
     "daniel@rockthejvm.com",
     "$2a$10$nVEJ3pJkjN1K6esp6aS6s.0mp2gGMep1x7Akaz3UgzTCrxGnAwC0a",
@@ -52,7 +70,7 @@ trait UserFixture {
     Some("Ciocirlan"),
     Some("Rock the JVM")
   )
-  
+
   val NewUserRiccardo = NewUserInfo(
     riccardoEmail,
     riccardoPassword,

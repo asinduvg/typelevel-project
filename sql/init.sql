@@ -1,6 +1,6 @@
 CREATE DATABASE board;
 
-\c board;
+\ c board;
 
 CREATE TABLE jobs(
     id uuid DEFAULT gen_random_uuid(),
@@ -41,3 +41,14 @@ ALTER TABLE
     users
 ADD
     CONSTRAINT pk_users PRIMARY KEY (email);
+
+CREATE TABLE recoverytokens (
+    email text NOT NULL,
+    token text NOT NULL,
+    expiration bigint NOT NULL
+);
+
+ALTER TABLE
+    recoverytokens
+ADD
+    CONSTRAINT pk_recoverytokens PRIMARY KEY (email);

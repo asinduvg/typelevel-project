@@ -28,28 +28,12 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-  private val mockedUsers: Users[IO] = new Users[IO] {
-
-    override def find(email: String): IO[Option[User]] =
-      if (email == danielEmail) IO.pure(Some(Daniel))
-      else IO.pure(None)
-
-    override def create(user: User): IO[String] =
-      IO.pure(user.email)
-
-    override def update(user: User): IO[Option[User]] =
-      IO.pure(Some(user))
-
-    override def delete(email: String): IO[Boolean] =
-      IO.pure(true)
-  }
-
   val mockedConfig = SecurityConfig("secret", 1.day)
 
   "Auth 'algebra'" - {
     "login should return None if the user doesn't exist" in {
       val program = for {
-        auth       <- LiveAuth[IO](mockedUsers)
+        auth      <- LiveAuth[IO](mockedUsers)
         maybeUser <- auth.login("user@rockthejvm.com", "password")
       } yield maybeUser
 
@@ -58,7 +42,7 @@ class AuthSpec extends AsyncFreeSpec with AsyncIOSpec with Matchers with UserFix
 
     "login should return None if the user exists but the password is wrong" in {
       val program = for {
-        auth       <- LiveAuth[IO](mockedUsers)
+        auth      <- LiveAuth[IO](mockedUsers)
         maybeUser <- auth.login(danielEmail, "wrongpassword")
       } yield maybeUser
 
