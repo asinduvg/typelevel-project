@@ -71,6 +71,16 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
       }
   }
 
+  // POST /auth/reset { ForgotPasswordInfo } => 200 Ok
+  private val forgotPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root / "reset" => Ok("TODO")
+  }
+
+  // POST /auth/recover { RecoverPasswordInfo } => 200 Ok
+  private val recoverPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root / "recover" => Ok("TODO")
+  }
+
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 Ok
   private val logoutRoute: AuthRoute[F] = { case req @ POST -> Root / "logout" asAuthed _ =>
     val token = req.authenticator
