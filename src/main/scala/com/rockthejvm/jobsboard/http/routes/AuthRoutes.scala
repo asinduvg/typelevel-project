@@ -16,7 +16,7 @@ import tsec.authentication.{asAuthed, SecuredRequestHandler, TSecAuthService}
 import com.rockthejvm.jobsboard.http.validation.syntax.HttpValidationDsl
 import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import com.rockthejvm.jobsboard.core.Auth
-import com.rockthejvm.jobsboard.domain.auth.{LoginInfo, NewPasswordInfo}
+import com.rockthejvm.jobsboard.domain.auth.*
 import com.rockthejvm.jobsboard.domain.user.{User, NewUserInfo}
 import com.rockthejvm.jobsboard.domain.security.*
 
@@ -73,12 +73,28 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
 
   // POST /auth/reset { ForgotPasswordInfo } => 200 Ok
   private val forgotPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] {
-    case req @ POST -> Root / "reset" => Ok("TODO")
+    case req @ POST -> Root / "reset" =>
+      for {
+        fpInfo <- req.as[ForgotPasswordInfo]
+        _      <- auth.sendPasswordRecoveryToken(fpInfo.email)
+        resp   <- Ok()
+      } yield resp
   }
 
   // POST /auth/recover { RecoverPasswordInfo } => 200 Ok
   private val recoverPasswordRoute: HttpRoutes[F] = HttpRoutes.of[F] {
-    case req @ POST -> Root / "recover" => Ok("TODO")
+    case req @ POST -> Root / "recover" =>
+      for {
+        rpInfo <- req.as[RecoverPasswordInfo]
+        recoverySuccessful <- auth.recoverPasswordFromToken(
+          rpInfo.email,
+          rpInfo.token,
+          rpInfo.newPassword
+        )
+        resp <-
+          if (recoverySuccessful) Ok()
+          else Forbidden(FailureResponse("Email/token combination is incorrect"))
+      } yield resp
   }
 
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 Ok
@@ -99,7 +115,7 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
       }
   }
 
-  val unauthedRoutes = loginRoute <+> createUserRoute
+  val unauthedRoutes = loginRoute <+> createUserRoute <+> forgotPasswordRoute <+> recoverPasswordRoute
   val authedRoutes = SecuredHandler[F].liftService(
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|

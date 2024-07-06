@@ -1,6 +1,6 @@
 CREATE DATABASE board;
 
-\ c board;
+\c board;
 
 CREATE TABLE jobs(
     id uuid DEFAULT gen_random_uuid(),
