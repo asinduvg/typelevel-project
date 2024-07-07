@@ -42,3 +42,6 @@ build/
 .metals
 .idea
 project
+node_modules
+.parcel-cache
+dist
