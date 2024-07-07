@@ -17,7 +17,7 @@ import com.rockthejvm.jobsboard.http.validation.syntax.HttpValidationDsl
 import com.rockthejvm.jobsboard.http.responses.FailureResponse
 import com.rockthejvm.jobsboard.core.Auth
 import com.rockthejvm.jobsboard.domain.auth.*
-import com.rockthejvm.jobsboard.domain.user.{User, NewUserInfo}
+import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.security.*
 
 import scala.language.implicitConversions
@@ -51,7 +51,8 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
           maybeNewUser <- auth.signup(newUserInfo)
           resp <- maybeNewUser match
             case Some(user) => Created(user.email)
-            case None       => BadRequest(s"User with email ${newUserInfo.email} already exists.")
+            case None =>
+              BadRequest(FailureResponse(s"User with email ${newUserInfo.email} already exists."))
         } yield resp
       }
   }
@@ -115,7 +116,8 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
       }
   }
 
-  val unauthedRoutes = loginRoute <+> createUserRoute <+> forgotPasswordRoute <+> recoverPasswordRoute
+  val unauthedRoutes =
+    loginRoute <+> createUserRoute <+> forgotPasswordRoute <+> recoverPasswordRoute
   val authedRoutes = SecuredHandler[F].liftService(
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|

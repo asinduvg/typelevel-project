@@ -4,7 +4,7 @@ import cats.*
 import cats.implicits.*
 import cats.data.*
 import cats.data.Validated.*
-import com.rockthejvm.jobsboard.domain.job.JobInfo
+import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.*
 import scala.util.{Try, Success, Failure}

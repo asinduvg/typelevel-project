@@ -24,13 +24,11 @@ import tsec.authentication.{IdentityStore, JWTAuthenticator, SecuredRequestHandl
 
 import scala.concurrent.duration.DurationInt
 
-import com.rockthejvm.jobsboard.core.Auth
-import com.rockthejvm.jobsboard.domain.auth.NewPasswordInfo
-import com.rockthejvm.jobsboard.domain.security.*
-import com.rockthejvm.jobsboard.domain.user.{User, NewUserInfo}
 import com.rockthejvm.jobsboard.fixtures.{UserFixture, SecuredRouteFixture}
-import com.rockthejvm.jobsboard.domain.auth.*
+import com.rockthejvm.jobsboard.core.Auth
 import com.rockthejvm.jobsboard.domain.security.*
+import com.rockthejvm.jobsboard.domain.user.*
+import com.rockthejvm.jobsboard.domain.auth.*
 
 class AuthRoutesSpec
     extends AsyncFreeSpec

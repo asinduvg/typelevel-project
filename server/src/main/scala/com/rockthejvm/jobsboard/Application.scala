@@ -15,6 +15,7 @@ import com.rockthejvm.jobsboard.modules.*
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import cats.syntax.*
+import org.http4s.server.middleware.CORS
 
 object Application extends IOApp.Simple {
 
@@ -30,7 +31,7 @@ object Application extends IOApp.Simple {
           .default[IO]
           .withHost(emberConfig.host) // String, need Host
           .withPort(emberConfig.port)
-          .withHttpApp(httpApi.endpoints.orNotFound)
+          .withHttpApp(CORS(httpApi.endpoints).orNotFound) // TODO: remove this when deploying
           .build
       } yield server
 

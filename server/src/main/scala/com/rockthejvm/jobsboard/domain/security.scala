@@ -16,7 +16,8 @@ import cats.kernel.Semigroup
 
 import org.http4s.Response
 
-import com.rockthejvm.jobsboard.domain.user.{User, Role}
+import com.rockthejvm.jobsboard.domain.user.*
+import com.rockthejvm.jobsboard.domain.auth.*
 import org.http4s.Status
 
 object security {
