@@ -9,6 +9,7 @@ import cats.effect.IO
 import scala.concurrent.duration.*
 
 import core.*
+import components.*
 
 object App {
   type Msg = Router.Msg
@@ -33,9 +34,7 @@ class App extends TyrianApp[App.Msg, App.Model] {
   // view triggered whenever model changes
   override def view(model: Model): Html[Msg] =
     div(
-      renderNavLink("Jobs", "/jobs"),
-      renderNavLink("Login", "/login"),
-      renderNavLink("Signup", "/signup"),
+      Header.view,
       div(s"You are now at: ${model.router.location}")
     )
 
@@ -55,18 +54,5 @@ class App extends TyrianApp[App.Msg, App.Model] {
     val (newRouter, cmd) = model.router.update(msg)
     (model.copy(router = newRouter), cmd)
   }
-
-  private def renderNavLink(text: String, location: String) =
-    a(
-      href    := location,
-      `class` := "nav-link",
-      onEvent(
-        "click",
-        e => {
-          e.preventDefault()
-          Router.ChangeLocation(location)
-        }
-      )
-    )(text)
 
 }
