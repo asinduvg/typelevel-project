@@ -54,6 +54,13 @@ final case class SignUpPage(
           }
         )
       )(
+        /*
+        email: String,
+      password: String,
+      firstName: Option[String],
+      lastName: Option[String],
+      company: Option[String]
+         */
         // 6 inputs
         renderInput("Email", "email", "text", true, UpdateEmail(_)),
         renderInput("Password", "password", "password", true, UpdatePassword(_)),
