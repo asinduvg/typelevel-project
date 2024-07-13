@@ -13,8 +13,8 @@ import com.rockthejvm.jobsboard.components.*
 import com.rockthejvm.jobsboard.pages.*
 
 object App {
-  type Msg = Router.Msg | Page.Msg
-  case class Model(router: Router, page: Page)
+  trait Msg
+  case class Model(router: Router, session: Session, page: Page)
 }
 
 @JSExportTopLevel("RockTheJvmApp")
@@ -28,12 +28,14 @@ class App extends TyrianApp[App.Msg, App.Model] {
    */
   import App.*
 
-  override def init(flags: Map[String, String]): (Model, Cmd[IO, Msg]) =
+  override def init(flags: Map[String, String]): (Model, Cmd[IO, App.Msg]) =
     val location            = window.location.pathname
     val page                = Page.get(location)
     val pageCmd             = page.initCmd
     val (router, routerCmd) = Router.startAt(location)
-    (Model(router, page), routerCmd |+| pageCmd)
+    val session             = Session()
+    val sessionCmd          = session.initCmd
+    (Model(router, session, page), routerCmd |+| sessionCmd |+| pageCmd)
 
   // view triggered whenever model changes
   override def view(model: Model): Html[Msg] =
@@ -54,7 +56,7 @@ class App extends TyrianApp[App.Msg, App.Model] {
     // model can change by receiving messages
     // model => message => (new model, _____)
     // update triggered whenever we get a new message
-  override def update(model: Model): Msg => (Model, Cmd[IO, Msg]) = {
+  override def update(model: Model): Msg => (Model, Cmd[IO, App.Msg]) = {
     case msg: Router.Msg =>
       val (newRouter, routerCmd) = model.router.update(msg)
       if (model.router == newRouter) // no change necessary
@@ -64,7 +66,10 @@ class App extends TyrianApp[App.Msg, App.Model] {
         val newPage    = Page.get(newRouter.location)
         val newPageCmd = newPage.initCmd
         (model.copy(router = newRouter, page = newPage), routerCmd |+| newPageCmd)
-    case msg: Page.Msg =>
+    case msg: Session.Msg =>
+      val (newSession, cmd) = model.session.update(msg)
+      (model.copy(session = newSession), cmd)
+    case msg: App.Msg =>
       val (newPage, cmd) = model.page.update(msg)
       (model.copy(page = newPage), cmd)
   }

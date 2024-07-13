@@ -4,6 +4,8 @@ import tyrian.Cmd
 import cats.effect.IO
 import tyrian.Html
 
+import com.rockthejvm.jobsboard.* 
+
 object Page {
   trait Msg
 
@@ -37,11 +39,11 @@ object Page {
 abstract class Page {
   // API
   // send a command upon instantiating
-  def initCmd: Cmd[IO, Page.Msg]
+  def initCmd: Cmd[IO, App.Msg]
   // update
-  def update(msg: Page.Msg): (Page, Cmd[IO, Page.Msg])
+  def update(msg: App.Msg): (Page, Cmd[IO, App.Msg])
   // render
-  def view: Html[Page.Msg]
+  def view: Html[App.Msg]
 }
 
 // login page
