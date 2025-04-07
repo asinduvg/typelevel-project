@@ -56,6 +56,7 @@ object Header {
     )
 
     val authedLinks = List(
+      renderSimpleNavLink("Profile", Page.Urls.PROFILE),
       renderNavLink("Log Out", Page.Urls.LOGOUT)(_ => Session.Logout)
     )
 
@@ -69,8 +70,7 @@ object Header {
   private def renderSimpleNavLink(text: String, location: String) =
     renderNavLink(text, location)(Router.ChangeLocation(_))
 
-  private def renderNavLink(text: String, location: String)
-                           (location2Msg: String => App.Msg) =
+  private def renderNavLink(text: String, location: String)(location2Msg: String => App.Msg) =
     li(`class` := "nav-item")(
       a(
         href    := location,

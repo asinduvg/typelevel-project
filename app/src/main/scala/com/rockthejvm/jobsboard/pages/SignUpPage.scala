@@ -116,6 +116,7 @@ object SignUpPage {
             parsed match
               case Left(e)  => SignUpError(s"Error: ${e.getMessage}")
               case Right(e) => SignUpError(e)
+          case _ => SignUpError("Unknown reply from server. Something's wrong!")
         }
 
       val onError: HttpError => Msg =
