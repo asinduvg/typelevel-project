@@ -99,12 +99,13 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
   }
 
   // POST /auth/logout { Authorization: Bearer {jwt} } => 200 Ok
-  private val logoutRoute: AuthRoute[F] = { case req @ POST -> Root / "logout" asAuthed _ =>
-    val token = req.authenticator
-    for {
-      _    <- authenticator.discard(token)
-      resp <- Ok()
-    } yield resp
+  private val logoutRoute: AuthRoute[F] = { 
+    case req @ POST -> Root / "logout" asAuthed _ =>
+      val token = req.authenticator
+      for {
+        _    <- authenticator.discard(token)
+        resp <- Ok()
+      } yield resp
   }
 
   // DELETE /auth/users/daniel@rockthejvm.com
@@ -115,10 +116,16 @@ class AuthRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (
         case false => NotFound()
       }
   }
+  
+  private val checkTokenRoute: AuthRoute[F] = {
+    case GET -> Root / "checkToken" asAuthed _ =>
+      Ok()
+  }
 
   val unauthedRoutes =
     loginRoute <+> createUserRoute <+> forgotPasswordRoute <+> recoverPasswordRoute
   val authedRoutes = SecuredHandler[F].liftService(
+    checkTokenRoute.restrictedTo(allRoles) |+|
     changePasswordRoute.restrictedTo(allRoles) |+|
       logoutRoute.restrictedTo(allRoles) |+|
       deleteUserRoute.restrictedTo(adminOnly)

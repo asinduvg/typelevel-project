@@ -12,7 +12,7 @@ import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt
 import tsec.passwordhashers.PasswordHash
 import tsec.common.SecureRandomId
-import com.rockthejvm.jobsboard.config.{SecurityConfig}
+import com.rockthejvm.jobsboard.config.SecurityConfig
 
 import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.config.*

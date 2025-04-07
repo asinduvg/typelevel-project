@@ -9,10 +9,10 @@ import io.circe.syntax.*
 import io.circe.parser.*
 import io.circe.generic.auto.*
 
-import com.rockthejvm.jobsboard.* 
+import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.domain.auth.*
 import tyrian.http.*
-import com.rockthejvm.jobsboard.common.{Constants, EndPoint}
+import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
 
 // form
 /*
@@ -151,8 +151,8 @@ object SignUpPage {
   case class SignUpSuccess(message: String) extends Msg
 
   object Endpoints {
-    val signup = new EndPoint[Msg] {
-      val location = Constants.Endpoints.signup
+    val signup = new Endpoint[Msg] {
+      val location = Constants.endpoints.signup
       val method   = Method.Post
 
       val onSuccess: Response => Msg = response =>

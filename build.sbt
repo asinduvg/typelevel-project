@@ -30,18 +30,20 @@ lazy val laikaVersion  = "0.19.0"
 lazy val circeVersion  = "0.14.0"
 
 lazy val app = (project in file("app"))
-  .enablePlugins(ScalaJSPlugin)
+  .enablePlugins(
+    ScalaJSPlugin
+  ) // scala compiler converts the code to JavaScript code rather than jvm byte code
   .settings(
     name         := "app",
     scalaVersion := scala3Version,
     organization := rockthejvm,
     libraryDependencies ++= Seq(
-      "io.indigoengine" %%% "tyrian-io"     % tyrianVersion,
-      "com.armanbilge"  %%% "fs2-dom"       % fs2DomVersion,
-      "org.planet42"    %%% "laika-core"    % laikaVersion,
-      "io.circe"        %%% "circe-core"    % circeVersion,
-      "io.circe"        %%% "circe-parser"  % circeVersion,
-      "io.circe"        %%% "circe-generic" % circeVersion
+      "io.indigoengine" %%% "tyrian-io"  % tyrianVersion, // frontend
+      "com.armanbilge"  %%% "fs2-dom"    % fs2DomVersion,
+      "org.planet42"    %%% "laika-core" % laikaVersion,  // parsing markdown
+      "io.circe" %%% "circe-core" % circeVersion, // convert data structures to json back and forth
+      "io.circe" %%% "circe-parser"  % circeVersion,
+      "io.circe" %%% "circe-generic" % circeVersion
     ),
     scalaJSLinkerConfig ~= { _.withModuleKind(ModuleKind.CommonJSModule) },
     semanticdbEnabled := true,
@@ -90,6 +92,6 @@ lazy val server = (project in file("server"))
       "org.testcontainers" % "postgresql"                    % testContainerVersion       % Test,
       "ch.qos.logback"     % "logback-classic"               % logbackVersion             % Test
     ),
-    Compile / mainClass := Some("com.rockthejvm.jobsboard.Application")
+    Compile / mainClass := Some("com.rockthejvm.jobsboard.Application") // to run sbt "server/run"
   )
   .dependsOn(core.jvm)

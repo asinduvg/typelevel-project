@@ -4,10 +4,10 @@ import tyrian.Cmd
 import cats.effect.IO
 import tyrian.Html
 
-import com.rockthejvm.jobsboard.* 
+import com.rockthejvm.jobsboard.*
 
 object Page {
-  trait Msg
+//  trait Msg
 
   enum StatusKind {
     case SUCCESS, ERROR, LOADING
@@ -17,11 +17,13 @@ object Page {
   object Urls {
     val LOGIN            = "/login"
     val SIGNUP           = "/signup"
+    val LOGOUT           = "/logout"
     val FORGOT_PASSWORD  = "/forgotpassword"
     val RECOVER_PASSWORD = "/recoverpassword"
     val JOBS             = "/jobs"
     val EMPTY            = ""
     val HOME             = "/"
+    val HASH             = "#"
   }
 
   import Urls.*

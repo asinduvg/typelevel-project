@@ -78,6 +78,4 @@ object security {
           TSecAuthService.withAuthorizationHandler(rbac)(bigRoute, acc.run)
         }
     }
-
-  // 3.
 }

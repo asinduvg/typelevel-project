@@ -19,7 +19,7 @@ import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.*
 import com.rockthejvm.jobsboard.domain.security.Authenticator
 import com.rockthejvm.jobsboard.fixtures.UserFixture
-import com.rockthejvm.jobsboard.config.{SecurityConfig}
+import com.rockthejvm.jobsboard.config.SecurityConfig
 
 import tsec.passwordhashers.PasswordHash
 import tsec.passwordhashers.jca.BCrypt

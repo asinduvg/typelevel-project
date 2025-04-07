@@ -8,7 +8,7 @@ import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.domain.security.*
 import com.rockthejvm.jobsboard.domain.user.*
 import com.rockthejvm.jobsboard.domain.auth.*
-import com.rockthejvm.jobsboard.config.{SecurityConfig}
+import com.rockthejvm.jobsboard.config.SecurityConfig
 import tsec.authentication.{JWTAuthenticator, IdentityStore, BackingStore}
 import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt

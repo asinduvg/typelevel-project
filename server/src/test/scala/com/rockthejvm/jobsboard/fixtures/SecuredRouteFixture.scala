@@ -2,7 +2,7 @@ package com.rockthejvm.jobsboard.fixtures
 
 import cats.data.* 
 import cats.effect.* 
-import tsec.mac.jca.{HMACSHA256}
+import tsec.mac.jca.HMACSHA256
 import tsec.jws.mac.JWTMac
 import tsec.authentication.{IdentityStore, JWTAuthenticator}
 

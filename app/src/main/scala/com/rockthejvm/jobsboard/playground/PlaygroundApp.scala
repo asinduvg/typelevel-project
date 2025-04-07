@@ -1,4 +1,4 @@
-package com.rockthejvm.jobsboard
+package com.rockthejvm.jobsboard.playground
 
 import scala.scalajs.js.annotation.*
 import org.scalajs.dom.{document, console}

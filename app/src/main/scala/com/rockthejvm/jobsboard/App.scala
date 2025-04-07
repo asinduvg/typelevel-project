@@ -1,7 +1,7 @@
 package com.rockthejvm.jobsboard
 
 import scala.scalajs.js.annotation.*
-import org.scalajs.dom.{window}
+import org.scalajs.dom.window
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger

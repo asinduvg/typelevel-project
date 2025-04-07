@@ -9,7 +9,7 @@ import io.circe.generic.auto.*
 import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.domain.auth.*
 import com.rockthejvm.jobsboard.core.*
-import com.rockthejvm.jobsboard.common.{Constants, EndPoint}
+import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
 import tyrian.cmds.Logger
 
 /*
@@ -30,9 +30,9 @@ final case class LoginPage(
 
   override def view: Html[App.Msg] =
     div(`class` := "form-section")(
-      // title: Sign Up
+      // title: Log In
       div(`class` := "top-section")(
-        h1("Sign Up")
+        h1("Log In")
       ),
       // form
       form(
@@ -108,8 +108,8 @@ object LoginPage {
   case class LoginSuccess(token: String) extends Msg
 
   object Endpoints {
-    val login = new EndPoint[Msg] {
-      override val location: String = Constants.Endpoints.login
+    val login = new Endpoint[Msg] {
+      override val location: String = Constants.endpoints.login
       override val method: Method   = Method.Post
       override val onError: HttpError => Msg =
         e => LoginError(e.toString)

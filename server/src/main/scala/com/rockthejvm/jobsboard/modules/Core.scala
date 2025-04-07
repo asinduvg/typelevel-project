@@ -6,7 +6,7 @@ import cats.effect.kernel.Resource
 import cats.effect.*
 import cats.implicits.*
 import com.rockthejvm.jobsboard.core.{LiveJobs, Auth, LiveUsers, LiveAuth, LiveTokens, LiveEmails}
-import com.rockthejvm.jobsboard.config.{SecurityConfig}
+import com.rockthejvm.jobsboard.config.SecurityConfig
 import doobie.util.transactor.Transactor
 import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.config.*
