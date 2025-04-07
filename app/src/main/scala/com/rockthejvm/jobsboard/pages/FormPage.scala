@@ -6,6 +6,9 @@ import tyrian.*
 import tyrian.Html.*
 import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.core.Router
+import org.scalajs.dom.{HTMLFormElement, document}
+
+import scala.concurrent.duration.FiniteDuration
 
 abstract class FormPage(title: String, status: Option[Page.Status]) extends Page {
   // abstract API
@@ -20,8 +23,9 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
       ),
       // form
       form(
-        name := "signin",
+        name    := "signin",
         `class` := "form",
+        id      := "form",
         onEvent(
           "submit",
           e => {
@@ -36,12 +40,12 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
     )
 
   protected def renderInput(
-                           name: String,
-                           uid: String,
-                           kind: String,
-                           isRequired: Boolean,
-                           onChange: String => App.Msg
-                         ) =
+      name: String,
+      uid: String,
+      kind: String,
+      isRequired: Boolean,
+      onChange: String => App.Msg
+  ) =
     div(`class` := "form-input")(
       label(`for` := name, `class` := "form-label")(
         if (isRequired) span("*") else span(),
@@ -52,7 +56,7 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
 
   protected def renderAuxLink(location: String, text: String): Html[App.Msg] =
     a(
-      href := location,
+      href    := location,
       `class` := "aux-link",
       onEvent(
         "click",
@@ -62,10 +66,30 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
         }
       )
     )(text)
-  
-  override def initCmd: Cmd[IO, App.Msg] = Cmd.None
+
+  override def initCmd: Cmd[IO, App.Msg] = clearForm()
 
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = ???
 
   override def view: Html[App.Msg] = renderForm()
+
+  /*
+    check if the form has loaded (if it's present on the page)
+      document.getElementById()
+    check again, while the element is null, with a space of 100 millis
+
+    use IO effects!
+   */
+  private def clearForm() =
+    Cmd.Run[IO, Unit, App.Msg] {
+      def effect: IO[Option[HTMLFormElement]] = for {
+        maybeForm <- IO(Option(document.getElementById("form").asInstanceOf[HTMLFormElement]))
+        finalForm <-
+          if (maybeForm.isEmpty) IO.sleep(FiniteDuration(100, "millis")) *> effect
+          else IO(maybeForm)
+      } yield finalForm
+
+      effect.map(_.foreach(_.reset()))
+
+    }(_ => App.NoOp)
 }
