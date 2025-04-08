@@ -43,7 +43,8 @@ final case class SignUpPage(
     renderInput("Confirm Password", "cpassword", "password", true, UpdateConfirmPassword(_)),
     renderInput("First Name", "firstname", "text", false, UpdateFirstName(_)),
     renderInput("Last Name", "lastname", "text", false, UpdateLastName(_)),
-    renderInput("Company", "company", "text", false, UpdateCompany(_))
+    renderInput("Company", "company", "text", false, UpdateCompany(_)),
+    button(`type` := "button", onClick(AttemptSignUp))("Sign up"),
   )
 
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match
