@@ -4,8 +4,12 @@ services:
     restart: always
     volumes:
       - "./sql:/docker-entrypoint-initdb.d"
+      - "typelevel-project-persistent-data:/var/lib/postgresql/data"
     environment:
       - "POSTGRES_USER=docker"
       - "POSTGRES_PASSWORD=docker"
     ports:
       - "5432:5432"
+
+volumes:
+  typelevel-project-persistent-data:

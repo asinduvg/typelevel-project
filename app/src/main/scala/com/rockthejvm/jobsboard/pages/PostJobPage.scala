@@ -3,14 +3,18 @@ package com.rockthejvm.jobsboard.pages
 import io.circe.parser.*
 import io.circe.generic.auto.*
 import cats.effect.IO
+import cats.syntax.traverse.*
 import com.rockthejvm.jobsboard.App
 import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
 import com.rockthejvm.jobsboard.core.Session
 import com.rockthejvm.jobsboard.domain.job.JobInfo
+import org.scalajs.dom.{File, FileReader}
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger
 import tyrian.http.*
+
+import scala.util.Try
 
 case class PostJobPage(
     company: String = "",
@@ -46,9 +50,13 @@ case class PostJobPage(
     case UpdateSalaryHi(v)    => (this.copy(salaryHi = Some(v)), Cmd.None)
     case UpdateCurrency(v)    => (this.copy(currency = Some(v)), Cmd.None)
     case UpdateCountry(v)     => (this.copy(country = Some(v)), Cmd.None)
-    case UpdateTags(v)        => (this.copy(tags = Some(v)), Cmd.None)
-    case UpdateSeniority(v)   => (this.copy(seniority = Some(v)), Cmd.None)
-    case UpdateOther(v)       => (this.copy(other = Some(v)), Cmd.None)
+    case UpdateImageFile(maybeFile) =>
+      (this, Commands.loadFile(maybeFile))
+    case UpdateImage(maybeImage) =>
+      (this.copy(image = maybeImage), Logger.consoleLog[IO](s"I HAZ IMAGE: $maybeImage"))
+    case UpdateTags(v)      => (this.copy(tags = Some(v)), Cmd.None)
+    case UpdateSeniority(v) => (this.copy(seniority = Some(v)), Cmd.None)
+    case UpdateOther(v)     => (this.copy(other = Some(v)), Cmd.None)
     case AttemptPostJob =>
       (
         this,
@@ -83,10 +91,11 @@ case class PostJobPage(
     renderInput("ExternalUrl", "externalUrl", "text", true, UpdateExternalUrl(_)),
     renderInput("Remote", "remote", "checkbox", true, _ => ToggleRemote),
     renderInput("Location", "location", "text", true, UpdateLocation(_)),
-    renderInput("SalaryLo", "salaryLo", "number", true, value => UpdateSalaryLo(value.toInt)),
-    renderInput("SalaryHi", "salaryHi", "number", false, value => UpdateSalaryHi(value.toInt)),
+    renderInput("SalaryLo", "salaryLo", "number", true, s => UpdateSalaryLo(parseNumber(s))),
+    renderInput("SalaryHi", "salaryHi", "number", false, s => UpdateSalaryHi(parseNumber(s))),
     renderInput("Currency", "currency", "text", false, UpdateCurrency(_)),
     renderInput("Country", "country", "text", false, UpdateCountry(_)),
+    renderImageUploadInput("Logo", "logo", image, UpdateImageFile(_)),
     renderInput("Tags", "tags", "text", false, UpdateTags(_)),
     renderInput("Seniority", "seniority", "text", false, UpdateSeniority(_)),
     renderInput("Other", "other", "text", false, UpdateOther(_)),
@@ -105,26 +114,31 @@ case class PostJobPage(
 
   private def setSuccessStatus(message: String) =
     this.copy(status = Some(Page.Status(message, Page.StatusKind.SUCCESS)))
+
+  private def parseNumber(s: String) =
+    Try(s.toInt).getOrElse(0)
 }
 
 private object PostJobPage {
-  trait Msg                                                 extends App.Msg
-  private case class UpdateCompany(company: String)         extends Msg
-  private case class UpdateTitle(title: String)             extends Msg
-  private case class UpdateDescription(description: String) extends Msg
-  private case class UpdateExternalUrl(externalUrl: String) extends Msg
-  private case object ToggleRemote                          extends Msg
-  private case class UpdateLocation(location: String)       extends Msg
-  private case class UpdateSalaryLo(salaryLo: Int)          extends Msg
-  private case class UpdateSalaryHi(salaryHi: Int)          extends Msg
-  private case class UpdateCurrency(currency: String)       extends Msg
-  private case class UpdateCountry(country: String)         extends Msg
-  private case class UpdateTags(tags: String)               extends Msg
-  private case class UpdateSeniority(seniority: String)     extends Msg
-  private case class UpdateOther(other: String)             extends Msg
-  private case object AttemptPostJob                        extends Msg
-  private case class PostJobError(error: String)            extends Msg
-  private case class PostJobSuccess(jobId: Any)             extends Msg
+  trait Msg                                                   extends App.Msg
+  private case class UpdateCompany(company: String)           extends Msg
+  private case class UpdateTitle(title: String)               extends Msg
+  private case class UpdateDescription(description: String)   extends Msg
+  private case class UpdateExternalUrl(externalUrl: String)   extends Msg
+  private case object ToggleRemote                            extends Msg
+  private case class UpdateLocation(location: String)         extends Msg
+  private case class UpdateSalaryLo(salaryLo: Int)            extends Msg
+  private case class UpdateSalaryHi(salaryHi: Int)            extends Msg
+  private case class UpdateCurrency(currency: String)         extends Msg
+  private case class UpdateCountry(country: String)           extends Msg
+  private case class UpdateImageFile(maybeFile: Option[File]) extends Msg
+  private case class UpdateImage(maybeImage: Option[String])  extends Msg
+  private case class UpdateTags(tags: String)                 extends Msg
+  private case class UpdateSeniority(seniority: String)       extends Msg
+  private case class UpdateOther(other: String)               extends Msg
+  private case object AttemptPostJob                          extends Msg
+  private case class PostJobError(error: String)              extends Msg
+  private case class PostJobSuccess(jobId: Any)               extends Msg
 
   object Endpoints {
     val postJob = new Endpoint[Msg] {
@@ -186,6 +200,24 @@ private object PostJobPage {
           other
         )
       )
+
+    def loadFile(maybeFile: Option[File]) =
+      Cmd.Run[IO, Option[String], Msg](
+        // run the effect here that returns an Option[String]
+        // Option[File] => Option[String]
+        // traverse
+        //  Option[File].traverse(file => IO[String]) => IO[Option[String]]
+        maybeFile.traverse { file =>
+          IO.async_ { cb =>
+            // create a reader
+            val reader = new FileReader
+            // set the onload
+            reader.onload = _ => cb(Right(reader.result.toString))
+            // trigger the reader
+            reader.readAsDataURL(file)
+          }
+        }
+      )(UpdateImage(_))
   }
 
 }
