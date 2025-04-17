@@ -3,8 +3,8 @@ package com.rockthejvm.jobsboard.pages
 import tyrian.Cmd
 import cats.effect.IO
 import tyrian.Html
-
 import com.rockthejvm.jobsboard.*
+import com.rockthejvm.jobsboard.components.*
 
 object Page {
 //  trait Msg
@@ -42,20 +42,4 @@ object Page {
   }
 }
 
-abstract class Page {
-  // API
-  // send a command upon instantiating
-  def initCmd: Cmd[IO, App.Msg]
-  // update
-  def update(msg: App.Msg): (Page, Cmd[IO, App.Msg])
-  // render
-  def view: Html[App.Msg]
-}
-
-// login page
-// signup page
-// forgot password page
-// recover password page
-// job list page == home page
-// individual job page
-// not found page
+abstract class Page extends Component[App.Msg, Page]
