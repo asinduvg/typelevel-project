@@ -8,7 +8,7 @@ import io.circe.parser.*
 import io.circe.generic.auto.*
 import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
-import com.rockthejvm.jobsboard.components.FilterPanel
+import com.rockthejvm.jobsboard.components.{Anchors, FilterPanel}
 import com.rockthejvm.jobsboard.domain.job.*
 
 final case class JobListPage(
@@ -92,7 +92,12 @@ final case class JobListPage(
         )
       ),
       div(`class` := "job-card-content")(
-        h4(s"${job.jobInfo.company} - ${job.jobInfo.title}")
+        h4(
+          Anchors.renderSimpleNavLink(
+            s"${job.jobInfo.company} - ${job.jobInfo.title}",
+            Page.Urls.JOB(job.id.toString)
+          )
+        )
       ),
       div(`class` := "job-card-apply")(
         a(href := job.jobInfo.externalUrl, target := "blank")("apply")

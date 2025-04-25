@@ -8,6 +8,7 @@ import io.circe.generic.auto.*
 import cats.effect.IO
 import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
+import com.rockthejvm.jobsboard.components.Anchors
 import com.rockthejvm.jobsboard.domain.auth.RecoverPasswordInfo
 import tyrian.http.{HttpError, Method, Response, Status}
 
@@ -45,7 +46,7 @@ final case class ResetPasswordPage(
     renderInput("Token", "token", "text", true, UpdateToken(_)),
     renderInput("Password", "password", "password", true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptResetPassword))("Set Password"),
-    renderAuxLink(Page.Urls.FORGOT_PASSWORD, "Don't have a token yet?")
+    Anchors.renderSimpleNavLink("Don't have a token yet?", Page.Urls.FORGOT_PASSWORD)
   )
 
   // util

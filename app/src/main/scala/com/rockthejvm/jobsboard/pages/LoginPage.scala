@@ -2,14 +2,14 @@ package com.rockthejvm.jobsboard.pages
 
 import tyrian.*
 import tyrian.Html.*
-import tyrian.http.{Method, HttpError, Response}
+import tyrian.http.{HttpError, Method, Response}
 import cats.effect.IO
 import io.circe.generic.auto.*
-
 import com.rockthejvm.jobsboard.*
 import com.rockthejvm.jobsboard.domain.auth.*
 import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
+import com.rockthejvm.jobsboard.components.Anchors
 import tyrian.cmds.Logger
 
 /*
@@ -32,7 +32,7 @@ final case class LoginPage(
     renderInput("Email", "email", "text", true, UpdateEmail(_)),
     renderInput("Password", "password", "password", true, UpdatePassword(_)),
     button(`type` := "button", onClick(AttemptLogin))("Login"),
-    renderAuxLink(Page.Urls.FORGOT_PASSWORD, "Forgot password?")
+    Anchors.renderSimpleNavLink("Forgot password?", Page.Urls.FORGOT_PASSWORD)
   )
 
   override def update(msg: App.Msg): (Page, Cmd[IO, App.Msg]) = msg match {
