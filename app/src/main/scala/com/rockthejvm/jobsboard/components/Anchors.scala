@@ -10,18 +10,18 @@ object Anchors {
   def renderSimpleNavLink(text: String, location: String, cssClass: String = "") =
     renderNavLink(text, location, cssClass)(Router.ChangeLocation(_))
 
-  def renderNavLink(text: String, location: String, cssClass: String = "")(location2Msg: String => App.Msg) =
-    li(`class` := "nav-item")(
-      a(
-        href := location,
-        `class` := cssClass,
-        onEvent(
-          "click",
-          e => {
-            e.preventDefault()
-            location2Msg(location)
-          }
-        )
-      )(text)
-    )
+  def renderNavLink(text: String, location: String, cssClass: String = "")(
+      location2Msg: String => App.Msg
+  ) =
+    a(
+      href    := location,
+      `class` := cssClass,
+      onEvent(
+        "click",
+        e => {
+          e.preventDefault()
+          location2Msg(location)
+        }
+      )
+    )(text)
 }

@@ -5,6 +5,7 @@ import com.rockthejvm.jobsboard.App
 import tyrian.*
 import tyrian.Html.*
 import com.rockthejvm.jobsboard.*
+import com.rockthejvm.jobsboard.common.Constants
 import com.rockthejvm.jobsboard.core.Router
 import org.scalajs.dom.{File, HTMLFormElement, document}
 import tyrian.Tyrian.HTMLInputElement
@@ -17,27 +18,36 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
 
   // protected API
   protected def renderForm(): Html[App.Msg] =
-    div(`class` := "form-section")(
-      // title: Log In
-      div(`class` := "top-section")(
-        h1(title)
-      ),
-      // form
-      form(
-        name    := "signin",
-        `class` := "form",
-        id      := "form",
-        onEvent(
-          "submit",
-          e => {
-            e.preventDefault()
-            App.NoOp
-          }
+    div(`class` := "row")(
+      div(`class` := "col-md-5 p-0")(
+        div(`class` := "logo")(
+          img(src   := Constants.logoImage, alt := "")
         )
-      )(
-        renderFormContent()
       ),
-      status.map(s => div(s.message)).getOrElse(div())
+      div(`class` := "col-md-7")(
+        div(`class` := "form-section")(
+          // title: Log In
+          div(`class` := "top-section")(
+            h1(span(title)),
+            maybeRenderErrors()
+          ),
+          // form
+          form(
+            name    := "signin",
+            `class` := "form",
+            id      := "form",
+            onEvent(
+              "submit",
+              e => {
+                e.preventDefault()
+                App.NoOp
+              }
+            )
+          )(
+            renderFormContent()
+          )
+        )
+      )
     )
 
   protected def renderInput(
@@ -46,14 +56,19 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
       kind: String,
       isRequired: Boolean,
       onChange: String => App.Msg
-  ) =
-    div(`class` := "form-input")(
-      label(`for` := uid, `class` := "form-label")(
-        if (isRequired) span("*") else span(),
-        text(name)
-      ),
-      input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
+  ) = {
+    div(`class` := "row")(
+      div(`class` := "col-md-12")(
+        div(`class` := "form-input")(
+          label(`for` := uid, `class` := "form-label")(
+            if (isRequired) span("*") else span(),
+            text(name)
+          ),
+          input(`type` := kind, `class` := "form-control", id := uid, onInput(onChange))
+        )
+      )
     )
+  }
 
   protected def renderImageUploadInput(
       name: String,
@@ -63,24 +78,38 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
   ) =
     div(`class` := "form-input")(
       label(`for` := uid, `class` := "form-label")(name),
-      input(`type` := "file", `class` := "form-control", id := uid, accept := "image/*", onEvent("change", e => {
-        val imageInput = e.target.asInstanceOf[HTMLInputElement]
-        val fileList = imageInput.files // FileList
-        if (fileList.length > 0)
-          onChange(Some(fileList(0)))
-        else
-          onChange(None)
-      })),
+      input(
+        `type`  := "file",
+        `class` := "form-control",
+        id      := uid,
+        accept  := "image/*",
+        onEvent(
+          "change",
+          e => {
+            val imageInput = e.target.asInstanceOf[HTMLInputElement]
+            val fileList   = imageInput.files // FileList
+            if (fileList.length > 0)
+              onChange(Some(fileList(0)))
+            else
+              onChange(None)
+          }
+        )
+      ),
       img(
-        id := "preview",
-        src := imgSrc.getOrElse(""),
-        alt := "preview",
-        width := "100",
+        id     := "preview",
+        src    := imgSrc.getOrElse(""),
+        alt    := "preview",
+        width  := "100",
         height := "100"
       )
     )
-    
-  protected def renderTextArea(name: String, uid: String, isRequired: Boolean, onChange: String => App.Msg) =
+
+  protected def renderTextArea(
+      name: String,
+      uid: String,
+      isRequired: Boolean,
+      onChange: String => App.Msg
+  ) =
     div(`class` := "form-input")(
       label(`for` := name, `class` := "form-label")(
         if (isRequired) span("*") else span(),
@@ -112,4 +141,7 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
       effect.map(_.foreach(_.reset()))
 
     }(_ => App.NoOp)
+
+  private def maybeRenderErrors() =
+    status.map(s => div(s.message)).getOrElse(div())
 }
