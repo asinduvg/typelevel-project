@@ -27,16 +27,15 @@ import com.rockthejvm.jobsboard.domain.pagination.*
 
 import scala.language.implicitConversions
 
-class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F])
+class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F], stripe: Stripe[F])
     extends HttpValidationDsl[F] {
 
   object OffsetQueryParam   extends OptionalQueryParamDecoderMatcher[Int]("offset")
   object LimitsetQueryParam extends OptionalQueryParamDecoderMatcher[Int]("limit")
 
   // GET /jobs/filters => { filters }
-  private val allFiltersRoute: HttpRoutes[F] = HttpRoutes.of[F] {
-    case GET -> Root / "filters" =>
-      jobs.possibleFilters().flatMap(jf => Ok(jf))
+  private val allFiltersRoute: HttpRoutes[F] = HttpRoutes.of[F] { case GET -> Root / "filters" =>
+    jobs.possibleFilters().flatMap(jf => Ok(jf))
   }
 
   // POST /jobs?limit=x&offset=y { filters } // TODO: add query params and filters
@@ -93,7 +92,20 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
     }
   }
 
-  val unauthedRoutes = allFiltersRoute <+> allJobsRoute <+> findJobRoute
+  // Stripe endpoints
+  // POST /jobs/promoted { jobInfo }
+  private val promotedJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root / "promoted" =>
+      req.validate[JobInfo] { jobInfo =>
+        for {
+          jobId   <- jobs.create("TODO@rockthejvm.com", jobInfo)
+          session <- stripe.createCheckoutSession(jobId.toString, "TODO@rockthejvm.com")
+          resp    <- session.map(sesh => Ok(sesh.getUrl())).getOrElse(NotFound())
+        } yield resp
+      }
+  }
+
+  val unauthedRoutes = promotedJobRoute <+> allFiltersRoute <+> allJobsRoute <+> findJobRoute
   val authedRoutes = SecuredHandler[F].liftService(
     createJobRoute.restrictedTo(allRoles) |+|
       updateJobRoute.restrictedTo(allRoles) |+|
@@ -107,6 +119,7 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
 
 object JobRoutes {
   def apply[F[_]: Concurrent: Logger: SecuredHandler](
-      jobs: Jobs[F]
-  ): JobRoutes[F] = new JobRoutes[F](jobs)
+      jobs: Jobs[F],
+      stripe: Stripe[F]
+  ): JobRoutes[F] = new JobRoutes[F](jobs, stripe)
 }

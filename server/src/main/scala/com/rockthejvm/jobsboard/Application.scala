@@ -22,10 +22,17 @@ object Application extends IOApp.Simple {
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
   override def run = ConfigSource.default.loadF[IO, AppConfig].flatMap {
-    case AppConfig(postgresConfig, emberConfig, securityConfig, tokenConfig, emailServiceConfig) =>
+    case AppConfig(
+          postgresConfig,
+          emberConfig,
+          securityConfig,
+          tokenConfig,
+          emailServiceConfig,
+          stripeConfig
+        ) =>
       val appResource = for {
         xa      <- Database.makePostgresResource[IO](postgresConfig) // DB connection
-        core    <- Core[IO](xa, tokenConfig, emailServiceConfig)     // DB layer
+        core    <- Core[IO](xa, tokenConfig, emailServiceConfig, stripeConfig)     // DB layer
         httpApi <- HttpApi[IO](core, securityConfig)                 // Business Logic layer
         server <- EmberServerBuilder // Server layer
           .default[IO]

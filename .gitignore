@@ -45,3 +45,5 @@ project
 node_modules
 .parcel-cache
 dist
+
+.env
