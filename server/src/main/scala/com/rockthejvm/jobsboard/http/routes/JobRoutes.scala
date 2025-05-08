@@ -2,16 +2,15 @@ package com.rockthejvm.jobsboard.http.routes
 
 import io.circe.generic.auto.*
 import org.http4s.circe.CirceEntityCodec.*
-
 import cats.*
 import cats.effect.*
 import org.http4s.dsl.Http4sDsl
 import org.http4s.server.Router
 import org.http4s.Http
+
 import java.net.http.HttpRequest
 import cats.syntax.all.*
-
-import tsec.authentication.{asAuthed, SecuredRequestHandler}
+import tsec.authentication.{SecuredRequestHandler, asAuthed}
 
 import java.util.UUID
 import com.rockthejvm.jobsboard.domain.job.*
@@ -21,9 +20,9 @@ import org.typelevel.log4cats.Logger
 import com.rockthejvm.jobsboard.core.*
 import com.rockthejvm.jobsboard.logging.syntax.*
 import org.http4s.HttpRoutes
-
 import com.rockthejvm.jobsboard.http.validation.syntax.*
 import com.rockthejvm.jobsboard.domain.pagination.*
+import org.typelevel.ci.CIStringSyntax
 
 import scala.language.implicitConversions
 
@@ -94,20 +93,44 @@ class JobRoutes[F[_]: Concurrent: Logger: SecuredHandler] private (jobs: Jobs[F]
 
   // Stripe endpoints
   // POST /jobs/promoted { jobInfo }
-  private val promotedJobRoute: HttpRoutes[F] = HttpRoutes.of[F] {
-    case req @ POST -> Root / "promoted" =>
-      req.validate[JobInfo] { jobInfo =>
+  private val promotedJobRoute: AuthRoute[F] = {
+    case req @ POST -> Root / "promoted" asAuthed user =>
+      req.request.validate[JobInfo] { jobInfo =>
         for {
-          jobId   <- jobs.create("TODO@rockthejvm.com", jobInfo)
-          session <- stripe.createCheckoutSession(jobId.toString, "TODO@rockthejvm.com")
+          jobId   <- jobs.create(user.email, jobInfo)
+          session <- stripe.createCheckoutSession(jobId.toString, user.email)
           resp    <- session.map(sesh => Ok(sesh.getUrl())).getOrElse(NotFound())
         } yield resp
       }
   }
 
-  val unauthedRoutes = promotedJobRoute <+> allFiltersRoute <+> allJobsRoute <+> findJobRoute
+  private val promotedJobWebhook: HttpRoutes[F] = HttpRoutes.of[F] {
+    case req @ POST -> Root / "webhook" =>
+      val stripeSigHeader =
+        req.headers.get(ci"Stripe-Signature").flatMap(_.toList.headOption).map(_.value)
+      stripeSigHeader match {
+        case Some(signature) =>
+          for {
+            payload <- req.bodyText.compile.string
+            handled <- stripe.handleWebhookEvent(
+              payload,
+              signature,
+              jobId => jobs.activate(UUID.fromString(jobId))
+            ) // TODO
+            resp <- if (handled.nonEmpty) Ok() else NoContent()
+          } yield resp
+
+        case None =>
+          Logger[F].info("Got webhook event with no Stripe signature") *>
+            Forbidden("No Stripe signature")
+      }
+  }
+
+  val unauthedRoutes =
+    allFiltersRoute <+> allJobsRoute <+> findJobRoute <+> promotedJobWebhook
   val authedRoutes = SecuredHandler[F].liftService(
-    createJobRoute.restrictedTo(allRoles) |+|
+    createJobRoute.restrictedTo(adminOnly) |+|
+      promotedJobRoute.restrictedTo(allRoles) |+|
       updateJobRoute.restrictedTo(allRoles) |+|
       deleteJobRoute.restrictedTo(allRoles)
   )

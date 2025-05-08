@@ -7,17 +7,27 @@ import com.stripe.Stripe as TheStripe
 import com.stripe.model.checkout.Session
 import com.stripe.param.checkout.SessionCreateParams
 import com.rockthejvm.jobsboard.logging.syntax.*
+import com.stripe.net.Webhook
 import org.typelevel.log4cats.Logger
+import scala.jdk.OptionConverters.*
+
+import scala.util.Try
 
 trait Stripe[F[_]] {
   def createCheckoutSession(jobId: String, userEmail: String): F[Option[Session]]
+  def handleWebhookEvent[A](
+      payload: String,
+      signature: String,
+      action: String => F[A]
+  ): F[Option[A]]
 }
 
 class LiveStripe[F[_]: MonadThrow: Logger](
     key: String,
     price: String,
     successUrl: String,
-    cancelUrl: String
+    cancelUrl: String,
+    webhookSecret: String
 ) extends Stripe[F] {
   // globally set constant
   TheStripe.apiKey = key
@@ -49,6 +59,46 @@ class LiveStripe[F[_]: MonadThrow: Logger](
       .map(_.some)
       .logError(error => s"Creating checkout session failed: $error")
       .recover { case _ => None }
+
+  override def handleWebhookEvent[A](
+      payload: String,
+      signature: String,
+      action: String => F[A]
+  ): F[Option[A]] =
+    MonadThrow[F]
+      .fromTry(
+        Try(
+          Webhook.constructEvent(
+            payload,
+            signature,
+            webhookSecret
+          )
+        )
+      )
+      .logError(e => "Stripe security verification failed - possibly faking attempt")
+      .flatMap { event =>
+        event.getType match {
+          case "checkout.session.completed" =>
+            event.getDataObjectDeserializer.getObject // Optional[Deserializer]
+              .toScala
+              .map(_.asInstanceOf[Session])  // Option[Session]
+              .map(_.getClientReferenceId()) // Option[String] <- stores my job id
+              .map(action)                   // Option[F[A]] // performing the effect
+              .sequence                      // F[Option[A]
+              .log(
+                {
+                  case None =>
+                    s"Event ${event.getId} not producing any effect - check Stripe dashboard"
+                  case Some(v) => s"Event ${event.getId} fully paid - OK"
+                },
+                e => s"Webhook action failed: $e"
+              )
+          case _ =>
+            None.pure[F]
+        }
+      }
+      .logError(e => s"Something else went wrong: $e")
+      .recover { case _ => None }
 }
 
 object LiveStripe {
@@ -56,6 +106,7 @@ object LiveStripe {
     stripeConfig.key,
     stripeConfig.price,
     stripeConfig.successUrl,
-    stripeConfig.cancelUrl
+    stripeConfig.cancelUrl,
+    stripeConfig.webhookSecret
   ).pure[F]
 }
