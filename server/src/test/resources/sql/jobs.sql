@@ -41,5 +41,5 @@ VALUES (
     NULL,
     'Senior',
     NULL,
-    false
+    true
 )

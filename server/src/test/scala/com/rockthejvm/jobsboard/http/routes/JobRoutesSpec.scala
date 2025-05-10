@@ -3,9 +3,7 @@ package com.rockthejvm.jobsboard.http.routes
 import cats.implicits.*
 import cats.effect.*
 import cats.effect.testing.scalatest.AsyncIOSpec
-
 import io.circe.generic.auto.*
-
 import org.http4s.*
 import org.http4s.dsl.*
 import org.http4s.implicits.*
@@ -14,14 +12,16 @@ import org.scalatest.freespec.AsyncFreeSpec
 import org.scalatest.matchers.should.Matchers
 import org.typelevel.log4cats.Logger
 import org.typelevel.log4cats.slf4j.Slf4jLogger
+import com.stripe.model.checkout.Session
+import com.stripe.param.checkout.SessionCreateParams
 
 import java.util.UUID
-
-import com.rockthejvm.jobsboard.core.Jobs
+import com.rockthejvm.jobsboard.core.{Jobs, LiveStripe}
 import com.rockthejvm.jobsboard.fixtures.{JobFixture, SecuredRouteFixture}
 import com.rockthejvm.jobsboard.domain.job.*
 import com.rockthejvm.jobsboard.domain.pagination.*
 import com.rockthejvm.jobsboard.domain.security.*
+import com.rockthejvm.jobsboard.core.Stripe
 
 class JobRoutesSpec
     extends AsyncFreeSpec
@@ -65,11 +65,27 @@ class JobRoutesSpec
     override def possibleFilters(): IO[JobFilter] = IO(
       defaultFilter
     )
+
+    override def activate(id: UUID): IO[Int] =
+      IO.pure(1)
   }
+
+  val stripe: Stripe[IO] =
+    new LiveStripe[IO]("key", "price", "example.com/test", "example.com/fail", "secret") {
+      override def createCheckoutSession(jobId: String, userEmail: String): IO[Option[Session]] =
+        IO.pure(Some(Session.create(SessionCreateParams.builder().build())))
+
+      override def handleWebhookEvent[A](
+          payload: String,
+          signature: String,
+          action: String => IO[A]
+      ): IO[Option[A]] =
+        IO.pure(None)
+    }
 
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
   // this is what we are testing
-  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs).routes
+  val jobRoutes: HttpRoutes[IO] = JobRoutes[IO](jobs, stripe).routes
   val defaultFilter: JobFilter = JobFilter(
     companies = List("Awesome Company")
   )

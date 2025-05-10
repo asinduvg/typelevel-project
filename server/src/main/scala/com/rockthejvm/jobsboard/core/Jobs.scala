@@ -44,6 +44,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
     sql"""
         SELECT id, date, ownerEmail, company, title, description, externalUrl, location, remote, salaryLo, salaryHi, currency, country, tags, image, seniority, other, active
         FROM jobs
+        WHERE active = true
     """
       .query[Job]
       .to[List]
@@ -67,7 +68,8 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         Fragments.or(tags.toList.map(tag => fr"$tag=any(tags)"): _*)
       ),
       filter.maxSalary.map(salary => fr"salaryHi > $salary"),
-      filter.remote.some.filter(identity).map(remote => fr"remote=$remote")
+      filter.remote.some.filter(identity).map(remote => fr"remote=$remote"),
+      fr"active=true".some
     )
     /*
       WHERE company in [filter.companies]
@@ -102,6 +104,7 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
         SELECT id, date, ownerEmail, company, title, description, externalUrl, location, remote, salaryLo, salaryHi, currency, country, tags, image, seniority, other, active
         FROM jobs
         WHERE id = $id
+        AND active = true
     """
       .query[Job]
       .option
@@ -154,11 +157,11 @@ class LiveJobs[F[_]: MonadCancelThrow: Logger] private (xa: Transactor[F]) exten
 
     sql"""
       SELECT
-        ARRAY(SELECT DISTINCT(company) FROM jobs) AS companies,
-        ARRAY(SELECT DISTINCT(location) FROM jobs) AS locations,
-        ARRAY(SELECT DISTINCT(country) FROM jobs WHERE country IS NOT NULL) AS countries,
-        ARRAY(SELECT DISTINCT(seniority) FROM jobs WHERE seniority IS NOT NULL) AS seniorities,
-        ARRAY(SELECT DISTINCT(UNNEST(tags)) FROM jobs) AS tags,
+        ARRAY(SELECT DISTINCT(company) FROM jobs WHERE active=true) AS companies,
+        ARRAY(SELECT DISTINCT(location) FROM jobs WHERE active=true) AS locations,
+        ARRAY(SELECT DISTINCT(country) FROM jobs WHERE country IS NOT NULL AND active=true) AS countries,
+        ARRAY(SELECT DISTINCT(seniority) FROM jobs WHERE seniority IS NOT NULL AND active=true) AS seniorities,
+        ARRAY(SELECT DISTINCT(UNNEST(tags)) FROM jobs WHERE active=true) AS tags,
         MAX(salaryHi),
         false FROM jobs
       """
