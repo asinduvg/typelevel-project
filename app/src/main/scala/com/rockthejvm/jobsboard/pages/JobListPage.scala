@@ -43,6 +43,9 @@ final case class JobListPage(
 
   override def view: Html[App.Msg] =
     section(`class` := "section-1")(
+      div(`class` := "container job-list-hero")(
+        h1(`class` := "job-list-title")("Rock the JVM Jobs board")
+      ),
       div(`class` := "container")(
         div(`class` := "row jvm-recent-jobs-body")(
           div(`class` := "col-lg-4")(
@@ -59,8 +62,8 @@ final case class JobListPage(
     status.map { s =>
       div(`class` := "load-more-action")(
         s match {
-          case Page.Status(_, Page.StatusKind.LOADING) => div("Loading")
-          case Page.Status(e, Page.StatusKind.ERROR)   => div(e)
+          case Page.Status(_, Page.StatusKind.LOADING) => div(`class` := "page-status-loading")("Loading")
+          case Page.Status(e, Page.StatusKind.ERROR)   => div(`class` := "page-status-errors")(e)
           case Page.Status(_, Page.StatusKind.SUCCESS) =>
             if (canLoadMore)
               button(`type` := "button", `class` := "load-more-btn", onClick(LoadMoreJobs))("Load more")

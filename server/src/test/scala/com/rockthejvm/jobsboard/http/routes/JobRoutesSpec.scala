@@ -37,8 +37,8 @@ class JobRoutesSpec
     override def create(ownerEmail: String, jobInfo: JobInfo): IO[UUID] =
       IO.pure(NewJobUuid)
 
-    override def all(): IO[List[Job]] =
-      IO.pure(List(AwesomeJob))
+    override def all(): fs2.Stream[IO, Job] =
+      fs2.Stream.emit(AwesomeJob)
 
     override def find(id: UUID): IO[Option[Job]] =
       if (id == AwesomeJobUuid)

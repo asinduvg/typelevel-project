@@ -9,7 +9,14 @@ import com.rockthejvm.jobsboard.common.{Constants, Endpoint}
 import com.rockthejvm.jobsboard.core.Session
 import com.rockthejvm.jobsboard.domain.job.JobInfo
 import com.rockthejvm.jobsboard.core.Router
-import org.scalajs.dom.{File, FileReader}
+import org.scalajs.dom.{
+  CanvasRenderingContext2D,
+  File,
+  FileReader,
+  HTMLCanvasElement,
+  HTMLImageElement,
+  document
+}
 import tyrian.*
 import tyrian.Html.*
 import tyrian.cmds.Logger
@@ -99,7 +106,9 @@ case class PostJobPage(
         renderInput("Tags", "tags", "text", false, UpdateTags(_)),
         renderInput("Seniority", "seniority", "text", false, UpdateSeniority(_)),
         renderInput("Other", "other", "text", false, UpdateOther(_)),
-        button(`type` := "button", onClick(AttemptPostJob))("Post Job")
+        button(`class` := "form-submit-btn", `type` := "button", onClick(AttemptPostJob))(
+          "Post Job - $" + Constants.jobAdvertPriceUSD
+        )
       )
   }
 
@@ -196,7 +205,7 @@ private object PostJobPage {
       )
     }
 
-    def loadFile(maybeFile: Option[File]) =
+    def loadFileBasic(maybeFile: Option[File]) =
       Cmd.Run[IO, Option[String], Msg](
         // run the effect here that returns an Option[String]
         // Option[File] => Option[String]
@@ -213,6 +222,55 @@ private object PostJobPage {
           }
         }
       )(UpdateImage(_))
+
+    def loadFile(maybeFile: Option[File]) =
+      Cmd.Run[IO, Option[String], Msg](
+        // run the effect here that returns an Option[String]
+        // Option[File] => Option[String]
+        // traverse
+        //  Option[File].traverse(file => IO[String]) => IO[Option[String]]
+        maybeFile.traverse { file =>
+          IO.async_ { cb =>
+            // create a reader
+            val reader = new FileReader
+            // set the onload
+            reader.onload = _ => {
+              // create a new img tag
+              val img = document.createElement("img").asInstanceOf[HTMLImageElement]
+              img.addEventListener(
+                "load",
+                _ => {
+                  // create a canvas on that image
+                  val canvas  = document.createElement("canvas").asInstanceOf[HTMLCanvasElement]
+                  val context = canvas.getContext("2d").asInstanceOf[CanvasRenderingContext2D]
+                  val (width, height) = computeDimensions(img.width, img.height)
+                  canvas.width = width
+                  canvas.height = height
+                  // force the developer to "draw" the image on a fixed width/height
+                  context.drawImage(img, 0, 0, canvas.width, canvas.height)
+                  // call cb(canvas.data)
+                  cb(Right(canvas.toDataURL(file.`type`)))
+                }
+              )
+              img.src = reader.result.toString
+            }
+            // trigger the reader
+            reader.readAsDataURL(file)
+          }
+        }
+      )(UpdateImage(_))
+
+    private def computeDimensions(w: Int, h: Int): (Int, Int) = {
+      if (w >= h) {
+        val ratio = w.toDouble / 256
+        val w1    = w / ratio
+        val h1    = h / ratio
+        (w1.toInt, h1.toInt)
+      } else {
+        val (h1, w1) = computeDimensions(h, w)
+        (w1, h1)
+      }
+    }
   }
 
 }

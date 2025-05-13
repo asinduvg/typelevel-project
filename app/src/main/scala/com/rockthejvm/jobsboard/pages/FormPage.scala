@@ -29,7 +29,7 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
           // title: Log In
           div(`class` := "top-section")(
             h1(span(title)),
-            maybeRenderErrors()
+            maybeRenderStatus()
           ),
           // form
           form(
@@ -71,11 +71,11 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
   }
 
   protected def renderToggle(
-                             name: String,
-                             uid: String,
-                             isRequired: Boolean,
-                             onChange: String => App.Msg
-                           ) = {
+      name: String,
+      uid: String,
+      isRequired: Boolean,
+      onChange: String => App.Msg
+  ) = {
     div(`class` := "row")(
       div(`class` := "col-md-12 job")(
         div(`class` := "form-check form-switch")(
@@ -162,8 +162,15 @@ abstract class FormPage(title: String, status: Option[Page.Status]) extends Page
 
     }(_ => App.NoOp)
 
-  private def maybeRenderErrors() =
+  private def maybeRenderStatus() =
     status
-      .filter(s => s.kind == Page.StatusKind.ERROR && s.message.nonEmpty)
-      .map(s => div(`class` := "form-errors")(s.message)).getOrElse(div())
+      .map {
+        case Page.Status(message, Page.StatusKind.ERROR) =>
+          div(`class` := "page-status-errors")(message)
+        case Page.Status(message, Page.StatusKind.SUCCESS) =>
+          div(`class` := "page-status-success")(message)
+        case Page.Status(message, Page.StatusKind.LOADING) =>
+          div(`class` := "page-status-loading")(message)
+      }
+      .getOrElse(div())
 }

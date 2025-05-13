@@ -40,13 +40,14 @@ class App extends TyrianApp[App.Msg, App.Model] {
 
   // view triggered whenever model changes
   override def view(model: Model): Html[Msg] =
-    div(
+    div(`class` := "app")(
       Header.view,
       main(
         div(`class` := "container-fluid")(
           model.page.view
         )
-      )
+      ),
+      Footer.view
     )
 
   // potentially endless stream of messages

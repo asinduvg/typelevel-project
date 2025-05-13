@@ -8,6 +8,10 @@ object Constants {
   @JSImport("/static/img/fiery-lava 128x128.png", JSImport.Default)
   val logoImage: String = js.native
 
+  @js.native
+  @JSImport("/static/img/resume.png", JSImport.Default)
+  val jobImagePlaceholder: String = js.native
+
   val emailRegex =
     """^[a-zA-Z0-9\.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$"""
 
@@ -33,5 +37,6 @@ object Constants {
   }
 
   val defaultPageSize = 20
+  val jobAdvertPriceUSD = 99
 
 }
